@@ -35,7 +35,7 @@ void deinit_string(struct string str)
 // Function to append a character to the string
 struct string push_back(struct string str, const char ch)
 {
-    if (str.size+1 == str.capacity)
+    if (str.size + 1 == str.capacity)
     {
         str.capacity *= 2;
         str.str = (char *)realloc(str.str, str.capacity * sizeof(char));

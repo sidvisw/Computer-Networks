@@ -41,14 +41,14 @@ int main()
 	// Specifies that up to 5 concurrent client requests will be queued up
 	listen(sockfd, 5);
 
-	/* 
+	/*
 		Looping construct for iterative server. After the
 		communication is over, the process comes back to wait again on
 		the original socket descriptor.
 	*/
 	while (1)
 	{
-		/* 
+		/*
 			The accept() system call accepts a client connection.
 			Blocks the server until a client request comes.
 		*/

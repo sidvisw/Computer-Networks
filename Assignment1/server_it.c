@@ -12,13 +12,13 @@
     Function to evaluate a given expression in string format
     Supports +, -, *, /, (, )
     @param: const char * - pointer to the string to be evaluated
-    @return: double - the result of the expression    
+    @return: double - the result of the expression
 */
 double evaluate(const char *const expr)
 {
-    double result = 0.0;    // Variable to store the result
-    char op = '+';  // Variable to store the current operator
-    double value = 0.0; // Variable to store the current read number
+    double result = 0.0; // Variable to store the result
+    char op = '+';       // Variable to store the current operator
+    double value = 0.0;  // Variable to store the current read number
     int i = 0;
 
     // Loop through the string to calculate the value of the expression
@@ -87,7 +87,7 @@ double evaluate(const char *const expr)
         // Action to be taken when we encounter a number
         else if (expr[i] >= '0' && expr[i] <= '9')
         {
-            value = 0.0;    // Initialise the value with 0.0
+            value = 0.0; // Initialise the value with 0.0
             // Loop till the last digit to obtain the number
             while (expr[i] >= '0' && expr[i] <= '9')
             {
@@ -128,7 +128,7 @@ double evaluate(const char *const expr)
             i++;
         }
     }
-    return result;  // Return the result of the expression
+    return result; // Return the result of the expression
 }
 
 /* THE SERVER PROCESS */
@@ -149,7 +149,7 @@ int main()
         exit(0);
     }
 
-	// Assign the values for sin_family, sin_addr, and sin_port according to the TCP communication
+    // Assign the values for sin_family, sin_addr, and sin_port according to the TCP communication
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_addr.sin_port = htons(20000);
@@ -164,17 +164,17 @@ int main()
     // Specifies that up to 5 concurrent client requests will be queued up
     listen(sockfd, 5);
 
-    /* 
-		Looping construct for iterative server. After the
-		communication is over, the process comes back to wait again on
-		the original socket descriptor.
-	*/
+    /*
+        Looping construct for iterative server. After the
+        communication is over, the process comes back to wait again on
+        the original socket descriptor.
+    */
     while (1)
     {
-        /* 
-			The accept() system call accepts a client connection.
-			Blocks the server until a client request comes.
-		*/
+        /*
+            The accept() system call accepts a client connection.
+            Blocks the server until a client request comes.
+        */
         clilen = sizeof(cli_addr);
         newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
 
@@ -189,23 +189,26 @@ int main()
         // Loop to continue evaluating expression till -1 is not entered
         while (strcmp(buf, "-1"))
         {
-            char *expr=(char*)calloc(100,sizeof(char)); // String to store the expression
-            int cur_len=100;
+            char *expr = (char *)calloc(100, sizeof(char)); // String to store the expression
+            int cur_len = 100;
             strcpy(expr, buf);
-            int recieved=!expr[cur_len-1];
+            int recieved = !expr[cur_len - 1];
             // Loop till the entire expression is recieved
-            while(!recieved){
-                expr=(char*)realloc(expr,(cur_len+100)*sizeof(char));
-                cur_len+=100;
-                recv(newsockfd, expr+cur_len-100, 100, 0);
-                for(int i=0;i<cur_len;i++){
-                    if(!expr[i])recieved=1;
+            while (!recieved)
+            {
+                expr = (char *)realloc(expr, (cur_len + 100) * sizeof(char));
+                cur_len += 100;
+                recv(newsockfd, expr + cur_len - 100, 100, 0);
+                for (int i = 0; i < cur_len; i++)
+                {
+                    if (!expr[i])
+                        recieved = 1;
                 }
             }
             // Evaluate the expression after all of it is recieved from the client
-            double result=evaluate(expr);
+            double result = evaluate(expr);
             free(expr);
-            // Send the result back to the client 
+            // Send the result back to the client
             send(newsockfd, &result, sizeof(result), 0);
             // Continue recieving next expression from the client
             recv(newsockfd, buf, 100, 0);
