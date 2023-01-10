@@ -100,8 +100,8 @@ double evaluate(const char *const expr)
 }
 int main()
 {
-    char expr[100];
-    printf("Enter an expression: ");
-    scanf("%[^\n]%*c", expr);
-    printf("Result: %.2lf", evaluate(expr));
+    
+    for(int i=0;i<100;i++){
+        printf("1+");
+    }
 }

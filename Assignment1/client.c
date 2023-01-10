@@ -10,6 +10,37 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+struct string
+{
+    char *str;
+    int size;
+    int capacity;
+};
+struct string init_string()
+{
+    struct string str;
+    str.size = 0;
+    str.capacity = 1;
+    str.str = (char *)malloc(str.capacity * sizeof(char));
+    str.str[0] = '\0';
+    return str;
+}
+void deinit_string(struct string str)
+{
+    free(str.str);
+}
+struct string push_back(struct string str, const char ch)
+{
+    if (str.size+1 == str.capacity)
+    {
+        str.capacity *= 2;
+        str.str = (char *)realloc(str.str, str.capacity * sizeof(char));
+    }
+    str.str[str.size++] = ch;
+    str.str[str.size] = '\0';
+    return str;
+}
+
 int main()
 {
     int sockfd;
@@ -51,33 +82,29 @@ int main()
         exit(0);
     }
 
-    char *expr = (char *)calloc(1, sizeof(char));
+    struct string expr = init_string();
     printf("Enter the expression: ");
     char ch;
-    int len = 0;
     while ((ch = getchar()) != '\n')
     {
-        expr = (char *)realloc(expr, (len + 1) * sizeof(char));
-        expr[len++] = ch;
-        expr[len] = '\0';
+        expr = push_back(expr, ch);
     }
-    while (strcmp(expr, "-1"))
+    while (strcmp(expr.str, "-1"))
     {
-        send(sockfd, expr, strlen(expr) + 1, 0);
+        send(sockfd, expr.str, expr.size + 1, 0);
         recv(sockfd, buf, sizeof(double), 0);
         printf("Result: %lf\n", *buf);
+        deinit_string(expr);
         printf("Enter the expression: ");
-        len = 0;
+        expr = init_string();
         while ((ch = getchar()) != '\n')
         {
-            expr = (char *)realloc(expr, (len + 1) * sizeof(char));
-            expr[len++] = ch;
-            expr[len] = '\0';
+            expr = push_back(expr, ch);
         }
     }
 
-    send(sockfd, expr, strlen(expr) + 1, 0);
-    free(expr);
+    send(sockfd, expr.str, expr.size + 1, 0);
+    deinit_string(expr);
 
     close(sockfd);
     return 0;
