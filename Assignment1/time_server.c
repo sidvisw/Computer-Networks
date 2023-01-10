@@ -1,13 +1,3 @@
-/*
-			NETWORK PROGRAMMING WITH SOCKETS
-
-In this program we illustrate the use of Berkeley sockets for interprocess
-communication across the network. We show the communication between a server
-process and a client process.
-
-
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -22,69 +12,46 @@ process and a client process.
 
 int main()
 {
-	int sockfd, newsockfd; /* Socket descriptors */
+	int sockfd, newsockfd; // Socket descriptors
 	int clilen;
 	struct sockaddr_in cli_addr, serv_addr;
 
 	int i;
-	char buf[100]; /* We will use this buffer for communication */
+	char buf[100]; // Buffer for communicating through client
 
-	/* The following system call opens a socket. The first parameter
-	   indicates the family of the protocol to be followed. For internet
-	   protocols we use AF_INET. For TCP sockets the second parameter
-	   is SOCK_STREAM. The third parameter is set to 0 for user
-	   applications.
-	*/
+	// System call to open a socket
 	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 	{
 		perror("Cannot create socket\n");
 		exit(0);
 	}
 
-	/* The structure "sockaddr_in" is defined in <netinet/in.h> for the
-	   internet family of protocols. This has three main fields. The
-	   field "sin_family" specifies the family and is therefore AF_INET
-	   for the internet family. The field "sin_addr" specifies the
-	   internet address of the server. This field is set to INADDR_ANY
-	   for machines having a single IP address. The field "sin_port"
-	   specifies the port number of the server.
-	*/
+	// Assign the values for sin_family, sin_addr, and sin_port according to the TCP communication
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
 	serv_addr.sin_port = htons(20000);
 
-	/* With the information provided in serv_addr, we associate the server
-	   with its port using the bind() system call.
-	*/
+	// Associate the server with its port using the bind() system call.
 	if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
 	{
 		perror("Unable to bind local address\n");
 		exit(0);
 	}
 
-	listen(sockfd, 5); /* This specifies that up to 5 concurrent client
-				  requests will be queued up while the system is
-				  executing the "accept" system call below.
-			   */
+	// Specifies that up to 5 concurrent client requests will be queued up
+	listen(sockfd, 5);
 
-	/* In this program we are illustrating an iterative server -- one
-	   which handles client connections one by one.i.e., no concurrency.
-	   The accept() system call returns a new socket descriptor
-	   which is used for communication with the server. After the
-	   communication is over, the process comes back to wait again on
-	   the original socket descriptor.
+	/* 
+		Looping construct for iterative server. After the
+		communication is over, the process comes back to wait again on
+		the original socket descriptor.
 	*/
 	while (1)
 	{
 
-		/* The accept() system call accepts a client connection.
-		   It blocks the server until a client request comes.
-
-		   The accept() system call fills up the client's details
-		   in a struct sockaddr which is passed as a parameter.
-		   The length of the structure is noted in clilen. Note
-		   that the new socket descriptor returned by the accept()
-		   system call is stored in "newsockfd".
+		/* 
+			The accept() system call accepts a client connection.
+			Blocks the server until a client request comes.
 		*/
 		clilen = sizeof(cli_addr);
 		newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
@@ -95,10 +62,8 @@ int main()
 			exit(0);
 		}
 
-		/* We initialize the buffer, copy the message to it,
-			and send the message to the client.
-		*/
-
+		// We initialize the buffer, copy the message to it, and send the message to the client.
+		// Extract the date and time from time.h module
 		time_t t = time(NULL);
 		struct tm tm = *localtime(&t);
 		sprintf(buf, "%d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
