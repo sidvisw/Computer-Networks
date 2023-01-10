@@ -18,6 +18,105 @@ process and a client process.
 #include <arpa/inet.h>
 #include <time.h>
 
+double evaluate(const char *const expr)
+{
+    double result = 0.0;
+    char op = '+';
+    double value = 0.0;
+    int i = 0;
+    while (expr[i] != '\0')
+    {
+        if (expr[i] == '+' || expr[i] == '-' || expr[i] == '*' || expr[i] == '/')
+        {
+            op = expr[i];
+            i++;
+        }
+        else if (expr[i] == '(')
+        {
+            char *sub_expr;
+            int j = i + 1;
+            int count = 1;
+            while (count != 0)
+            {
+                if (expr[j] == '(')
+                {
+                    count++;
+                }
+                else if (expr[j] == ')')
+                {
+                    count--;
+                }
+                j++;
+            }
+            sub_expr = (char *)malloc(sizeof(char) * (j - i - 1));
+            int k = 0;
+            for (int l = i + 1; l < j - 1; l++)
+            {
+                sub_expr[k++] = expr[l];
+            }
+            sub_expr[k] = '\0';
+            value = evaluate(sub_expr);
+            free(sub_expr);
+            switch (op)
+            {
+            case '+':
+                result = result + value;
+                break;
+            case '-':
+                result = result - value;
+                break;
+            case '*':
+                result = result * value;
+                break;
+            case '/':
+                result = result / value;
+                break;
+            }
+            i = j;
+        }
+        else if (expr[i] >= '0' && expr[i] <= '9')
+        {
+            value = 0.0;
+            while (expr[i] >= '0' && expr[i] <= '9')
+            {
+                value = value * 10 + (expr[i] - '0');
+                i++;
+            }
+            if (expr[i] == '.')
+            {
+                double factor = 0.1;
+                i++;
+                while (expr[i] >= '0' && expr[i] <= '9')
+                {
+                    value = value + (expr[i] - '0') * factor;
+                    factor = factor / 10;
+                    i++;
+                }
+            }
+            switch (op)
+            {
+            case '+':
+                result = result + value;
+                break;
+            case '-':
+                result = result - value;
+                break;
+            case '*':
+                result = result * value;
+                break;
+            case '/':
+                result = result / value;
+                break;
+            }
+        }
+        else
+        {
+            i++;
+        }
+    }
+    return result;
+}
+
 /* THE SERVER PROCESS */
 
 int main()
@@ -95,17 +194,6 @@ int main()
             exit(0);
         }
 
-        /* We initialize the buffer, copy the message to it,
-            and send the message to the client.
-        */
-
-        time_t t = time(NULL);
-        struct tm tm = *localtime(&t);
-        sprintf(buf, "%d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-
-        // strcpy(buf,"Message from server");
-        send(newsockfd, buf, strlen(buf) + 1, 0);
-
         /* We now receive a message from the client. For this example
            we make an assumption that the entire message sent from the
            client will come together. In general, this need not be true
@@ -117,7 +205,25 @@ int main()
           can do this.
         */
         recv(newsockfd, buf, 100, 0);
-        printf("%s\n", buf);
+        while (strcmp(buf, "-1"))
+        {
+            char *expr=(char*)calloc(100,sizeof(char));
+            int cur_len=100;
+            strcpy(expr, buf);
+            int recieved=!expr[cur_len-1];
+            while(!recieved){
+                expr=(char*)realloc(expr,(cur_len+100)*sizeof(char));
+                cur_len+=100;
+                recv(newsockfd, expr+cur_len-100, 100, 0);
+                for(int i=0;i<cur_len;i++){
+                    if(!expr[i])recieved=1;
+                }
+            }
+            double result=evaluate(expr);
+            free(expr);
+            send(newsockfd, &result, sizeof(result), 0);
+            recv(newsockfd, buf, 100, 0);
+        }
 
         close(newsockfd);
     }

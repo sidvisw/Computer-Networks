@@ -16,7 +16,7 @@ int main()
     struct sockaddr_in serv_addr;
 
     int i;
-    char buf[100];
+    double *buf = (double *)malloc(sizeof(double));
 
     /* Opening a socket is exactly similar to the server process */
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -51,19 +51,33 @@ int main()
         exit(0);
     }
 
-    /* After connection, the client can send or receive messages.
-       However, please note that recv() will block when the
-       server is not sending and vice versa. Similarly send() will
-       block when the server is not receiving and vice versa. For
-       non-blocking modes, refer to the online man pages.
-    */
-    for (i = 0; i < 100; i++)
-        buf[i] = '\0';
-    recv(sockfd, buf, 100, 0);
-    printf("%s\n", buf);
+    char *expr = (char *)calloc(1, sizeof(char));
+    printf("Enter the expression: ");
+    char ch;
+    int len = 0;
+    while ((ch = getchar()) != '\n')
+    {
+        expr = (char *)realloc(expr, (len + 1) * sizeof(char));
+        expr[len++] = ch;
+        expr[len] = '\0';
+    }
+    while (strcmp(expr, "-1"))
+    {
+        send(sockfd, expr, strlen(expr) + 1, 0);
+        recv(sockfd, buf, sizeof(double), 0);
+        printf("Result: %lf\n", *buf);
+        printf("Enter the expression: ");
+        len = 0;
+        while ((ch = getchar()) != '\n')
+        {
+            expr = (char *)realloc(expr, (len + 1) * sizeof(char));
+            expr[len++] = ch;
+            expr[len] = '\0';
+        }
+    }
 
-    strcpy(buf, "Date and Time Printed Successfully");
-    send(sockfd, buf, strlen(buf) + 1, 0);
+    send(sockfd, expr, strlen(expr) + 1, 0);
+    free(expr);
 
     close(sockfd);
     return 0;
