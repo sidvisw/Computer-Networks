@@ -1,13 +1,3 @@
-/*
-            NETWORK PROGRAMMING WITH SOCKETS
-
-In this program we illustrate the use of Berkeley sockets for interprocess
-communication across the network. We show the communication between a server
-process and a client process.
-
-
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -18,24 +8,36 @@ process and a client process.
 #include <arpa/inet.h>
 #include <time.h>
 
+/*
+    Function to evaluate a given expression in string format
+    Supports +, -, *, /, (, )
+    @param: const char * - pointer to the string to be evaluated
+    @return: double - the result of the expression    
+*/
 double evaluate(const char *const expr)
 {
-    double result = 0.0;
-    char op = '+';
-    double value = 0.0;
+    double result = 0.0;    // Variable to store the result
+    char op = '+';  // Variable to store the current operator
+    double value = 0.0; // Variable to store the current read number
     int i = 0;
+
+    // Loop through the string to calculate the value of the expression
     while (expr[i] != '\0')
     {
+        // Action to be taken when an operator is encountered
         if (expr[i] == '+' || expr[i] == '-' || expr[i] == '*' || expr[i] == '/')
         {
             op = expr[i];
             i++;
         }
+        // Action to be taken when we encounter an opening parenthesis
         else if (expr[i] == '(')
         {
-            char *sub_expr;
+            char *sub_expr; // Variable to store the sub-expression inside the parenthesis
             int j = i + 1;
             int count = 1;
+
+            // Loop to calculate the bounds of the sub-expression
             while (count != 0)
             {
                 if (expr[j] == '(')
@@ -48,15 +50,23 @@ double evaluate(const char *const expr)
                 }
                 j++;
             }
+
             sub_expr = (char *)malloc(sizeof(char) * (j - i - 1));
+
             int k = 0;
+            // Store the sub-expression in a string
             for (int l = i + 1; l < j - 1; l++)
             {
                 sub_expr[k++] = expr[l];
             }
             sub_expr[k] = '\0';
+
+            // Evaluate the sub-expression
             value = evaluate(sub_expr);
+
             free(sub_expr);
+
+            // Calculate the result by performing the required operator on the result and value
             switch (op)
             {
             case '+':
@@ -74,14 +84,17 @@ double evaluate(const char *const expr)
             }
             i = j;
         }
+        // Action to be taken when we encounter a number
         else if (expr[i] >= '0' && expr[i] <= '9')
         {
-            value = 0.0;
+            value = 0.0;    // Initialise the value with 0.0
+            // Loop till the last digit to obtain the number
             while (expr[i] >= '0' && expr[i] <= '9')
             {
                 value = value * 10 + (expr[i] - '0');
                 i++;
             }
+            // Case for handling floating point numbers
             if (expr[i] == '.')
             {
                 double factor = 0.1;
@@ -93,6 +106,7 @@ double evaluate(const char *const expr)
                     i++;
                 }
             }
+            // Appropriately apply the operator to result and value
             switch (op)
             {
             case '+':
@@ -114,77 +128,53 @@ double evaluate(const char *const expr)
             i++;
         }
     }
-    return result;
+    return result;  // Return the result of the expression
 }
 
 /* THE SERVER PROCESS */
 
 int main()
 {
-    int sockfd, newsockfd; /* Socket descriptors */
+    int sockfd, newsockfd; // Socket descriptors
     int clilen;
     struct sockaddr_in cli_addr, serv_addr;
 
     int i;
-    char buf[100]; /* We will use this buffer for communication */
+    char buf[100]; // Buffer for communicating through client
 
-    /* The following system call opens a socket. The first parameter
-       indicates the family of the protocol to be followed. For internet
-       protocols we use AF_INET. For TCP sockets the second parameter
-       is SOCK_STREAM. The third parameter is set to 0 for user
-       applications.
-    */
+    // System call to open a socket
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
         perror("Cannot create socket\n");
         exit(0);
     }
 
-    /* The structure "sockaddr_in" is defined in <netinet/in.h> for the
-       internet family of protocols. This has three main fields. The
-       field "sin_family" specifies the family and is therefore AF_INET
-       for the internet family. The field "sin_addr" specifies the
-       internet address of the server. This field is set to INADDR_ANY
-       for machines having a single IP address. The field "sin_port"
-       specifies the port number of the server.
-    */
+	// Assign the values for sin_family, sin_addr, and sin_port according to the TCP communication
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_addr.sin_port = htons(20000);
 
-    /* With the information provided in serv_addr, we associate the server
-       with its port using the bind() system call.
-    */
+    // Associate the server with its port using the bind() system call
     if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
         perror("Unable to bind local address\n");
         exit(0);
     }
 
-    listen(sockfd, 5); /* This specifies that up to 5 concurrent client
-                  requests will be queued up while the system is
-                  executing the "accept" system call below.
-               */
+    // Specifies that up to 5 concurrent client requests will be queued up
+    listen(sockfd, 5);
 
-    /* In this program we are illustrating an iterative server -- one
-       which handles client connections one by one.i.e., no concurrency.
-       The accept() system call returns a new socket descriptor
-       which is used for communication with the server. After the
-       communication is over, the process comes back to wait again on
-       the original socket descriptor.
-    */
+    /* 
+		Looping construct for iterative server. After the
+		communication is over, the process comes back to wait again on
+		the original socket descriptor.
+	*/
     while (1)
     {
-
-        /* The accept() system call accepts a client connection.
-           It blocks the server until a client request comes.
-
-           The accept() system call fills up the client's details
-           in a struct sockaddr which is passed as a parameter.
-           The length of the structure is noted in clilen. Note
-           that the new socket descriptor returned by the accept()
-           system call is stored in "newsockfd".
-        */
+        /* 
+			The accept() system call accepts a client connection.
+			Blocks the server until a client request comes.
+		*/
         clilen = sizeof(cli_addr);
         newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
 
@@ -194,23 +184,16 @@ int main()
             exit(0);
         }
 
-        /* We now receive a message from the client. For this example
-           we make an assumption that the entire message sent from the
-           client will come together. In general, this need not be true
-           for TCP sockets (unlike UDPi sockets), and this program may not
-           always work (for this example, the chance is very low as the
-           message is very short. But in general, there has to be some
-           mechanism for the receiving side to know when the entire message
-          is received. Look up the return value of recv() to see how you
-          can do this.
-        */
+        // recieve 100 bytes of the expression in the buffer from the client
         recv(newsockfd, buf, 100, 0);
+        // Loop to continue evaluating expression till -1 is not entered
         while (strcmp(buf, "-1"))
         {
-            char *expr=(char*)calloc(100,sizeof(char));
+            char *expr=(char*)calloc(100,sizeof(char)); // String to store the expression
             int cur_len=100;
             strcpy(expr, buf);
             int recieved=!expr[cur_len-1];
+            // Loop till the entire expression is recieved
             while(!recieved){
                 expr=(char*)realloc(expr,(cur_len+100)*sizeof(char));
                 cur_len+=100;
@@ -219,9 +202,12 @@ int main()
                     if(!expr[i])recieved=1;
                 }
             }
+            // Evaluate the expression after all of it is recieved from the client
             double result=evaluate(expr);
             free(expr);
+            // Send the result back to the client 
             send(newsockfd, &result, sizeof(result), 0);
+            // Continue recieving next expression from the client
             recv(newsockfd, buf, 100, 0);
         }
 

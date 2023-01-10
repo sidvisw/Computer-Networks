@@ -31,7 +31,7 @@ int main()
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
 	serv_addr.sin_port = htons(20000);
 
-	// Associate the server with its port using the bind() system call.
+	// Associate the server with its port using the bind() system call
 	if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
 	{
 		perror("Unable to bind local address\n");
@@ -48,7 +48,6 @@ int main()
 	*/
 	while (1)
 	{
-
 		/* 
 			The accept() system call accepts a client connection.
 			Blocks the server until a client request comes.

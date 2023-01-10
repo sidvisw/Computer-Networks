@@ -1,6 +1,3 @@
-
-/*    THE CLIENT PROCESS */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -10,12 +7,15 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+// A string structure analogous to the C++ std::string
 struct string
 {
     char *str;
     int size;
     int capacity;
 };
+
+// Constructor function for the string structure
 struct string init_string()
 {
     struct string str;
@@ -25,10 +25,14 @@ struct string init_string()
     str.str[0] = '\0';
     return str;
 }
+
+// Destructor function for the string structure
 void deinit_string(struct string str)
 {
     free(str.str);
 }
+
+// Function to append a character to the string
 struct string push_back(struct string str, const char ch)
 {
     if (str.size+1 == str.capacity)
@@ -41,6 +45,8 @@ struct string push_back(struct string str, const char ch)
     return str;
 }
 
+/* THE CLIENT PROCESS */
+
 int main()
 {
     int sockfd;
@@ -49,52 +55,47 @@ int main()
     int i;
     double *buf = (double *)malloc(sizeof(double));
 
-    /* Opening a socket is exactly similar to the server process */
+    // Opening a socket is exactly similar to the server process
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
         perror("Unable to create socket\n");
         exit(0);
     }
 
-    /* Recall that we specified INADDR_ANY when we specified the server
-       address in the server. Since the client can run on a different
-       machine, we must specify the IP address of the server.
-
-       In this program, we assume that the server is running on the
-       same machine as the client. 127.0.0.1 is a special address
-       for "localhost" (this machine)
-
-    /* IF YOUR SERVER RUNS ON SOME OTHER MACHINE, YOU MUST CHANGE
-           THE IP ADDRESS SPECIFIED BELOW TO THE IP ADDRESS OF THE
-           MACHINE WHERE YOU ARE RUNNING THE SERVER.
-        */
-
+    // Specify the IP address of the server. We assume that the server is running on the same machine as the client. 127.0.0.1 is a special address for "localhost" (this machine)
     serv_addr.sin_family = AF_INET;
     inet_aton("127.0.0.1", &serv_addr.sin_addr);
     serv_addr.sin_port = htons(20000);
 
-    /* With the information specified in serv_addr, the connect()
-       system call establishes a connection with the server process.
-    */
+    // connect() system call establishes a connection with the server process
     if ((connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr))) < 0)
     {
         perror("Unable to connect to server\n");
         exit(0);
     }
 
+    // Initialise the string structure to store the expression the user inputs
     struct string expr = init_string();
+
     printf("Enter the expression: ");
     char ch;
+    // Take input character by character until a newline character is reached
     while ((ch = getchar()) != '\n')
     {
         expr = push_back(expr, ch);
     }
+
+    // Loop to evaluate expressions until -1 is entered
     while (strcmp(expr.str, "-1"))
     {
+        // Send the expression to the server and recieve the result
         send(sockfd, expr.str, expr.size + 1, 0);
         recv(sockfd, buf, sizeof(double), 0);
         printf("Result: %lf\n", *buf);
+
+        // Free the string structure and take input for the next expression
         deinit_string(expr);
+
         printf("Enter the expression: ");
         expr = init_string();
         while ((ch = getchar()) != '\n')
@@ -103,7 +104,10 @@ int main()
         }
     }
 
+    // Send -1 to the server to indicate that the client is done
     send(sockfd, expr.str, expr.size + 1, 0);
+
+    // Free the dynamically allocated memory
     deinit_string(expr);
 
     close(sockfd);

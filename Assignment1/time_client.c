@@ -29,14 +29,14 @@ int main()
 	inet_aton("127.0.0.1", &serv_addr.sin_addr);
 	serv_addr.sin_port = htons(20000);
 
-	// connect() system call establishes a connection with the server process.
+	// connect() system call establishes a connection with the server process
 	if ((connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr))) < 0)
 	{
 		perror("Unable to connect to server\n");
 		exit(0);
 	}
 
-	// Recieve the date and time from the server and store i tin a null initialized buffer
+	// Recieve the date and time from the server and store it in a null initialized buffer
 	for (i = 0; i < 100; i++)
 		buf[i] = '\0';
 	recv(sockfd, buf, 100, 0);
