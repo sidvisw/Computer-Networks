@@ -103,21 +103,7 @@ int main()
 		struct tm tm = *localtime(&t);
 		sprintf(buf, "%d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
-		// strcpy(buf,"Message from server");
 		send(newsockfd, buf, strlen(buf) + 1, 0);
-
-		/* We now receive a message from the client. For this example
-		   we make an assumption that the entire message sent from the
-		   client will come together. In general, this need not be true
-		   for TCP sockets (unlike UDPi sockets), and this program may not
-		   always work (for this example, the chance is very low as the
-		   message is very short. But in general, there has to be some
-		   mechanism for the receiving side to know when the entire message
-		  is received. Look up the return value of recv() to see how you
-		  can do this.
-		*/
-		recv(newsockfd, buf, 100, 0);
-		printf("%s\n", buf);
 
 		close(newsockfd);
 	}

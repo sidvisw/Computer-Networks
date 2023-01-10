@@ -62,9 +62,6 @@ int main()
 	recv(sockfd, buf, 100, 0);
 	printf("%s\n", buf);
 
-	strcpy(buf, "Date and Time Printed Successfully");
-	send(sockfd, buf, strlen(buf) + 1, 0);
-
 	close(sockfd);
 	return 0;
 }
