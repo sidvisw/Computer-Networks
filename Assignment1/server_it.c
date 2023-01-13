@@ -202,9 +202,8 @@ int main()
             {
                 expr = (char *)realloc(expr, (cur_len + 100) * sizeof(char));
                 // Initilise some initial values to expr reallocated bytes
-                // (I have used '$' as '\0' is used to indicate the the expression has been recieved on server end)
                 for (int i = cur_len; i < cur_len + 100; i++)
-                    expr[i] = '$';
+                    expr[i] = '\0';
                 cur_len += 100;
                 recv(newsockfd, expr + cur_len - 100, 100, 0);
                 for (int i = 0; i < cur_len; i++)
