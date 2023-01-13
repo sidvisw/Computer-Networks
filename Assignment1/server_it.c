@@ -140,7 +140,7 @@ int main()
     struct sockaddr_in cli_addr, serv_addr;
 
     int i;
-    char buf[100]; // Buffer for communicating through client
+    char buf[101]; // Buffer for communicating through client
 
     // System call to open a socket
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -184,6 +184,10 @@ int main()
             exit(0);
         }
 
+        // Initialise the buffer with null characters
+        for (int i = 0; i < 101; i++)
+            buf[i] = '\0';
+
         // recieve 100 bytes of the expression in the buffer from the client
         recv(newsockfd, buf, 100, 0);
         // Loop to continue evaluating expression till -1 is not entered
@@ -197,12 +201,18 @@ int main()
             while (!recieved)
             {
                 expr = (char *)realloc(expr, (cur_len + 100) * sizeof(char));
+                // Initilise some initial values to expr reallocated bytes
+                // (I have used '$' as '\0' is used to indicate the the expression has been recieved on server end)
+                for (int i = cur_len; i < cur_len + 100; i++)
+                    expr[i] = '$';
                 cur_len += 100;
                 recv(newsockfd, expr + cur_len - 100, 100, 0);
                 for (int i = 0; i < cur_len; i++)
                 {
                     if (!expr[i])
+                    {
                         recieved = 1;
+                    }
                 }
             }
             // Evaluate the expression after all of it is recieved from the client
@@ -210,6 +220,10 @@ int main()
             free(expr);
             // Send the result back to the client
             send(newsockfd, &result, sizeof(result), 0);
+
+            // Reinitialize the buff with nul characters
+            for (int i = 0; i < 101; i++)
+                buf[i] = '\0';
             // Continue recieving next expression from the client
             recv(newsockfd, buf, 100, 0);
         }
