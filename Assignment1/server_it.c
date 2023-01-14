@@ -188,8 +188,9 @@ int main()
         for (int i = 0; i < 101; i++)
             buf[i] = '\0';
 
-        // recieve 100 bytes of the expression in the buffer from the client
+        // Recieve 100 bytes of the expression in the buffer from the client
         int recv_bytes=recv(newsockfd, buf, 100, 0);
+
         // Loop to continue evaluating expression till -1 is not entered
         while (strcmp(buf, "-1"))
         {
@@ -197,6 +198,7 @@ int main()
             int cur_len = recv_bytes;
             strcpy(expr, buf);
             int recieved = !expr[cur_len-1];
+
             // Loop till the entire expression is recieved
             while (!recieved)
             {
@@ -213,6 +215,7 @@ int main()
                     }
                 }
             }
+            
             // Evaluate the expression after all of it is recieved from the client
             double result = evaluate(expr);
             free(expr);

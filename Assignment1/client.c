@@ -49,7 +49,6 @@ struct string push_back(struct string str, const char ch)
 
 int main()
 {
-    FILE *fp = fopen("test.txt", "w");
     int sockfd;
     struct sockaddr_in serv_addr;
 
@@ -89,8 +88,6 @@ int main()
     // Loop to evaluate expressions until -1 is entered
     while (strcmp(expr.str, "-1"))
     {
-        printf("String Sent : %d\n", expr.size);
-        fprintf(fp, "%s\n", expr.str);
         // Send the expression to the server and recieve the result
         send(sockfd, expr.str, expr.size + 1, 0);
         recv(sockfd, buf, sizeof(double), 0);
