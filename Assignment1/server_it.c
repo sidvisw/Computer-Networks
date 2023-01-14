@@ -189,28 +189,27 @@ int main()
             buf[i] = '\0';
 
         // recieve 100 bytes of the expression in the buffer from the client
-        recv(newsockfd, buf, 100, 0);
+        int recv_bytes=recv(newsockfd, buf, 100, 0);
         // Loop to continue evaluating expression till -1 is not entered
         while (strcmp(buf, "-1"))
         {
-            char *expr = (char *)calloc(100, sizeof(char)); // String to store the expression
-            int cur_len = 100;
+            char *expr = (char *)calloc(101, sizeof(char)); // String to store the expression
+            int cur_len = recv_bytes;
             strcpy(expr, buf);
-            int recieved = !expr[cur_len - 1];
+            int recieved = !expr[cur_len-1];
             // Loop till the entire expression is recieved
             while (!recieved)
             {
-                expr = (char *)realloc(expr, (cur_len + 100) * sizeof(char));
+                expr = (char *)realloc(expr, (cur_len + 101) * sizeof(char));
                 // Initilise some initial values to expr reallocated bytes
-                for (int i = cur_len; i < cur_len + 100; i++)
-                    expr[i] = '$';
-                cur_len += 100;
-                recv(newsockfd, expr + cur_len - 100, 100, 0);
-                for (int i = 0; i < cur_len; i++)
+                recv_bytes=recv(newsockfd, expr + cur_len, 100, 0);
+                cur_len+=recv_bytes;
+                for (int i = cur_len-recv_bytes; i < cur_len; i++)
                 {
                     if (!expr[i])
                     {
                         recieved = 1;
+                        break;
                     }
                 }
             }
@@ -224,7 +223,7 @@ int main()
             for (int i = 0; i < 101; i++)
                 buf[i] = '\0';
             // Continue recieving next expression from the client
-            recv(newsockfd, buf, 100, 0);
+            recv_bytes=recv(newsockfd, buf, 100, 0);
         }
 
         close(newsockfd);
