@@ -43,9 +43,10 @@ int main()
     socklen_t len;
     char buffer[MAXLINE];
 
+    // Looping construct for iterative server
     while (1)
     {
-
+        // First do a recieve call to know the address of the client
         len = sizeof(cliaddr);
         recvfrom(sockfd, (char *)buffer, MAXLINE, 0, (struct sockaddr *)&cliaddr, &len);
         printf("%s\n", buffer);
@@ -55,6 +56,7 @@ int main()
         struct tm tm = *localtime(&t);
         sprintf(buffer, "%d-%02d-%02d %02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 
+        // Send the date and time to the client
         sendto(sockfd, (const char *)buffer, strlen(buffer) + 1, 0, (const struct sockaddr *)&cliaddr, len);
     }
 
