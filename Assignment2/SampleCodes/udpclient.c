@@ -24,7 +24,7 @@ int main() {
     // Server information 
     servaddr.sin_family = AF_INET; 
     servaddr.sin_port = htons(8181); 
-    inet_aton("127.0.0.1", &serv_addr.sin_addr); 
+    inet_aton("127.0.0.1", &servaddr.sin_addr); 
       
     int n;
     socklen_t len; 
