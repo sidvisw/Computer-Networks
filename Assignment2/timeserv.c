@@ -1,4 +1,4 @@
-// A Simple UDP Server that sends a HELLO message
+// A Simple UDP Server
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
