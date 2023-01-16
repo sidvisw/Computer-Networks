@@ -7,6 +7,31 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+struct string{
+   char *str;
+   size_t size;
+   size_t capacity;
+};
+struct string init_string(){
+   struct string s;
+   s.str = (char*)calloc(1, sizeof(char));
+   s.size = 0;
+   s.capacity = 1;
+   return s;
+}
+void deinit_string(struct string s){
+   free(s.str);
+}
+void concat_string(struct string *s1, char*str, size_t len){
+   if(s1->size + len >= s1->capacity){
+      s1->capacity = s1->size + len + 1;
+      s1->str = (char*)realloc(s1->str, s1->capacity);
+   }
+   memcpy(s1->str + s1->size, str, len);
+   s1->size += len;
+   s1->str[s1->size] = '\0';
+}
+
 /* THE CLIENT PROCESS */
 
 int main()
@@ -52,22 +77,51 @@ int main()
 	}
 	if (!strcmp(buf, "NOT-FOUND"))
 	{
+		printf("Invalid username\n");
 		close(sockfd);
 		exit(0);
 	}
-
-	int i = 0;
-	char ch;
-	while ((ch = getchar()) != '\n')
+	else if (!strcmp(buf, "FOUND"))
 	{
-		buf[i++] = ch;
-		i %= 50;
-		if (!i)
-			send(sockfd, buf, 50, 0);
+		do
+		{
+			int i = 0;
+			char ch;
+			while ((ch = getchar()) != '\n')
+			{
+				buf[i++] = ch;
+				i %= 50;
+				if (i==0)
+					send(sockfd, buf, 50, 0);
+			}
+			buf[i]='\0';
+			send(sockfd, buf, strlen(buf)+1, 0);
+			if (!strcmp(buf, "exit"))
+			{
+				break;
+			}
+			struct string recv_string=init_string();
+			recv_len=recv(sockfd, buf, 50, 0);
+			while(buf[recv_len-1]){
+				concat_string(&recv_string, buf, recv_len);
+				recv_len=recv(sockfd, buf, 50, 0);
+			}
+			concat_string(&recv_string, buf, recv_len);
+			if(!strcmp(recv_string.str, "$$$$")){
+				printf("Invalid command\n");
+			}
+			else if(!strcmp(recv_string.str, "####")){
+				printf("Error in runnig command\n");
+			}
+			else if(!strcmp(recv_string.str, "")){
+
+			}
+			else{
+				printf("%s\n", recv_string.str);
+			}
+			deinit_string(recv_string);
+		} while (strcmp(buf, "exit"));
 	}
-	if (i)
-		send(sockfd, buf, i, 0);
-	send(sockfd, "\0", 1, 0);
 
 	close(sockfd);
 	return 0;

@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <dirent.h>
 
 struct string{
    char *str;
@@ -30,6 +31,10 @@ void concat_string(struct string *s1, char*str, size_t len){
    memcpy(s1->str + s1->size, str, len);
    s1->size += len;
    s1->str[s1->size] = '\0';
+}
+
+int min(int a, int b){
+   return a < b ? a : b;
 }
 
 /* THE SERVER PROCESS */
@@ -161,6 +166,7 @@ int main()
          
          strcpy(buf, "FOUND");
          send(newsockfd, buf, strlen(buf) + 1, 0);
+         do{
          recv_len = recv(newsockfd, buf, 50, 0);
          struct string command=init_string();
          while (buf[recv_len - 1])
@@ -168,9 +174,81 @@ int main()
             concat_string(&command, buf, recv_len);
             recv_len = recv(newsockfd, buf, 50, 0);
          }
+         concat_string(&command, buf, recv_len);
+
          printf("Command recieved : %s\n", command.str);
+         if(!strcmp(buf, "exit"))break;
+         char *head_cmd=strtok(command.str, " ");
+         if(!strcmp(head_cmd, "pwd")){
+            struct string cwd=init_string();
+            while(getcwd(cwd.str, cwd.capacity)!=cwd.str){
+               cwd.capacity*=2;
+               cwd.str=(char*)realloc(cwd.str, cwd.capacity);
+            }
+            int send_len=send(newsockfd, cwd.str, min(50, cwd.size+1), 0);
+            while(cwd.str[send_len-1]){
+               send_len+=send(newsockfd, cwd.str+send_len, min(50, strlen(cwd.str+send_len)+1), 0);
+            }
+            deinit_string(cwd);
+         }
+         else if(!strcmp(head_cmd, "dir")){
+            struct string wdir=init_string();
+            concat_string(&wdir, ".", 1);
+            char *change_dir=strtok(NULL, " ");
+            if(change_dir){
+               deinit_string(wdir);
+               wdir=init_string();
+               concat_string(&wdir, change_dir, strlen(change_dir));
+            }
+            DIR *dir;
+            struct dirent *entry;
+            struct string dir_list=init_string();
+            if (dir = opendir(wdir.str)) {
+               while (entry = readdir(dir)) {
+                  concat_string(&dir_list, entry->d_name, strlen(entry->d_name));
+                  concat_string(&dir_list, " " , 1);
+               }
+               closedir(dir);
+            }
+            else{
+               concat_string(&dir_list, "####", 4);
+            }
+            int send_len=send(newsockfd, dir_list.str, min(50, dir_list.size+1), 0);
+            while(dir_list.str[send_len-1]){
+               send_len+=send(newsockfd, dir_list.str+send_len, min(50, strlen(dir_list.str+send_len)+1), 0);
+            }
+            deinit_string(dir_list);
+            deinit_string(wdir);
+         }
+         else if(!strcmp(head_cmd, "cd")){
+            struct string wdir=init_string();
+            concat_string(&wdir, "/", 1);
+            char *change_dir=strtok(NULL, " ");
+            if(change_dir){
+               deinit_string(wdir);
+               wdir=init_string();
+               concat_string(&wdir, change_dir, strlen(change_dir));
+            }
+            if(chdir(wdir.str)==0){
+               strcpy(buf, "");
+               send(newsockfd, buf, strlen(buf)+1, 0);
+            }
+            else{
+               strcpy(buf, "####");
+               send(newsockfd, buf, strlen(buf) + 1, 0);
+            }
+            deinit_string(wdir);
+         }
+         else if(!strcmp(head_cmd, "exit")){
+
+         }
+         else{
+            strcpy(buf, "$$$$");
+            send(newsockfd, buf, strlen(buf) + 1, 0);
+         }
 
          deinit_string(command);
+         }while(strcmp(buf, "exit"));
 
          close(newsockfd);
          exit(0);
