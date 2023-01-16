@@ -152,7 +152,7 @@ int main()
          strcpy(buf, "FOUND");
          send(newsockfd, buf, strlen(buf) + 1, 0);
 
-         // Looping construct to ask for users the shell commands until they exit
+         // Looping construct to take the shell commands until the client sends exit
          do
          {
             // Recieve the shell command from the client in chunks and keep on appending it to a string structure 'command'

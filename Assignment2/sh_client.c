@@ -105,6 +105,7 @@ int main()
 	// If the username is validated on the server side proceed to take bash commands
 	else if (!strcmp(buf, "FOUND"))
 	{
+        // Looping construct to ask for users the shell commands until they exit
 		do
 		{
 			int i = 0;
