@@ -9,7 +9,7 @@
 #include <netinet/in.h>
 #include <time.h>
 
-#define MAXLINE 1024
+#define MAXLINE 50
 
 int main()
 {

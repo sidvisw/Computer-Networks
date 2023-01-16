@@ -9,7 +9,7 @@
 #include <netinet/in.h>
 #include <sys/poll.h>
 
-#define MAXLEN 1024
+#define MAXLEN 50
 
 int main()
 {
