@@ -7,6 +7,31 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+struct string{
+   char *str;
+   size_t size;
+   size_t capacity;
+};
+struct string init_string(){
+   struct string s;
+   s.str = (char*)calloc(1, sizeof(char));
+   s.size = 0;
+   s.capacity = 1;
+   return s;
+}
+void deinit_string(struct string s){
+   free(s.str);
+}
+void concat_string(struct string *s1, char*str, size_t len){
+   if(s1->size + len >= s1->capacity){
+      s1->capacity = s1->size + len + 1;
+      s1->str = (char*)realloc(s1->str, s1->capacity);
+   }
+   memcpy(s1->str + s1->size, str, len);
+   s1->size += len;
+   s1->str[s1->size] = '\0';
+}
+
 /* THE SERVER PROCESS */
 
 int main()
@@ -137,12 +162,15 @@ int main()
          strcpy(buf, "FOUND");
          send(newsockfd, buf, strlen(buf) + 1, 0);
          recv_len = recv(newsockfd, buf, 50, 0);
-
+         struct string command=init_string();
          while (buf[recv_len - 1])
          {
-            recv_len += recv(newsockfd, buf + recv_len, 50 - recv_len, 0);
+            concat_string(&command, buf, recv_len);
+            recv_len = recv(newsockfd, buf, 50, 0);
          }
-         printf("Command recieved : %s\n", buf);
+         printf("Command recieved : %s\n", command.str);
+
+         deinit_string(command);
 
          close(newsockfd);
          exit(0);
