@@ -8,32 +8,52 @@
 #include <arpa/inet.h>
 #include <dirent.h>
 
-struct string{
+/* A structure to hold a string */
+struct string
+{
    char *str;
    size_t size;
    size_t capacity;
 };
-struct string init_string(){
+// An initializer for the string structure (works like a constructor)
+struct string init_string()
+{
    struct string s;
-   s.str = (char*)calloc(1, sizeof(char));
+   s.str = (char *)calloc(1, sizeof(char));
    s.size = 0;
    s.capacity = 1;
    return s;
 }
-void deinit_string(struct string s){
+// A de-initializer function for string structure (works like a destructor)
+void deinit_string(struct string s)
+{
    free(s.str);
 }
-void concat_string(struct string *s1, char*str, size_t len){
-   if(s1->size + len >= s1->capacity){
+
+/* Utility function to concatanate two strings
+   @params: struct string * - The string to which concatanation will take place
+            char * - The string to be concatanated onto the struct string
+            size_t - The length of the sting char* to be concatenated
+*/
+void concat_string(struct string *s1, char *str, size_t len)
+{
+   if (s1->size + len >= s1->capacity)
+   {
       s1->capacity = s1->size + len + 1;
-      s1->str = (char*)realloc(s1->str, s1->capacity);
+      s1->str = (char *)realloc(s1->str, s1->capacity);
    }
    memcpy(s1->str + s1->size, str, len);
    s1->size += len;
    s1->str[s1->size] = '\0';
 }
 
-int min(int a, int b){
+/* Ultility function to get the minimum of the two numbers
+   @params: int - the first number
+            int - the second number
+   @returns: int - the minimum of the two numbers
+*/
+int min(int a, int b)
+{
    return a < b ? a : b;
 }
 
@@ -41,70 +61,41 @@ int min(int a, int b){
 
 int main()
 {
-   int sockfd, newsockfd; /* Socket descriptors */
+   int sockfd, newsockfd; // Socket descriptors
    int clilen;
    struct sockaddr_in cli_addr, serv_addr;
 
-   char buf[50]; /* We will use this buffer for communication */
+   char buf[50]; // Buffer for communicating through client
 
-   /* The following system call opens a socket. The first parameter
-      indicates the family of the protocol to be followed. For internet
-      protocols we use AF_INET. For TCP sockets the second parameter
-      is SOCK_STREAM. The third parameter is set to 0 for user
-      applications.
-   */
+   // System call to open a socket
    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
    {
       perror("Cannot create socket\n");
       exit(0);
    }
 
-   /* The structure "sockaddr_in" is defined in <netinet/in.h> for the
-      internet family of protocols. This has three main fields. The
-      field "sin_family" specifies the family and is therefore AF_INET
-      for the internet family. The field "sin_addr" specifies the
-      internet address of the server. This field is set to INADDR_ANY
-      for machines having a single IP address. The field "sin_port"
-      specifies the port number of the server.
-   */
+   // Assign the values for sin_family, sin_addr, and sin_port according to the TCP communication
    serv_addr.sin_family = AF_INET;
    serv_addr.sin_addr.s_addr = INADDR_ANY;
    serv_addr.sin_port = htons(20000);
 
-   /* With the information provided in serv_addr, we associate the server
-      with its port using the bind() system call.
-   */
+   // Associate the server with its port using the bind() system call
    if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
    {
       perror("Unable to bind local address\n");
       exit(0);
    }
 
-   listen(sockfd, 5); /* This specifies that up to 5 concurrent client
-                 requests will be queued up while the system is
-                 executing the "accept" system call below.
-              */
+   // Specifies that up to 5 concurrent client requests will be queued up
+   listen(sockfd, 5);
 
-   /* In this program we are illustrating a concurrent server -- one
-      which forks to accept multiple client connections concurrently.
-      As soon as the server accepts a connection from a client, it
-      forks a child which communicates with the client, while the
-      parent becomes free to accept a new connection. To facilitate
-      this, the accept() system call returns a new socket descriptor
-      which can be used by the child. The parent continues with the
-      original socket descriptor.
-   */
+   // Looping structure for the concurrent server
+   // forks() function generates a new child process and the parent process comes back and waits at the accept call
    while (1)
    {
-
-      /* The accept() system call accepts a client connection.
-         It blocks the server until a client request comes.
-
-         The accept() system call fills up the client's details
-         in a struct sockaddr which is passed as a parameter.
-         The length of the structure is noted in clilen. Note
-         that the new socket descriptor returned by the accept()
-         system call is stored in "newsockfd".
+      /*
+         The accept() system call accepts a client connection.
+         Blocks the server until a client request comes.
       */
       clilen = sizeof(cli_addr);
       newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
@@ -115,36 +106,25 @@ int main()
          exit(0);
       }
 
-      /* Having successfully accepted a client connection, the
-         server now forks. The parent closes the new socket
-         descriptor and loops back to accept the next connection.
-      */
+      // The child process handles the client request and the parent goes back to accept the next client request
       if (fork() == 0)
       {
+         // Close the old socket in the child since all communications will be through the new socket.
+         close(sockfd);
 
-         /* This child process will now communicate with the
-            client through the send() and recv() system calls.
-         */
-         close(sockfd); 
-         /* Close the old socket since all
-                   communications will be through
-                   the new socket.
-                */
-
-         /* We initialize the buffer, copy the message to it,
-            and send the message to the client.
-         */
-
+         // Send the client the LOGIN prompt for asking him/her to login
          strcpy(buf, "LOGIN:");
          send(newsockfd, buf, strlen(buf) + 1, 0);
 
+         // Recieve the username from the client side and store it in the buffer
          int recv_len = recv(newsockfd, buf, 50, 0);
          while (buf[recv_len - 1])
-         {
             recv_len += recv(newsockfd, buf + recv_len, 50 - recv_len, 0);
-         }
 
-         FILE*fp=fopen("users.txt", "r");
+         // Opening the file to read the list of usernames to match with
+         FILE *fp = fopen("users.txt", "r");
+
+         // Linear search for the user in the file user.txt
          char user[50];
          int found_flag = 0;
          while (fscanf(fp, "%s%*c", user) != EOF)
@@ -155,101 +135,157 @@ int main()
                break;
             }
          }
+
+         // Close the file after the searching is complete
          fclose(fp);
 
-         if(!found_flag){
+         // If the username is not in the list, send the prompt message 'NOT-FOUND' to the client
+         if (!found_flag)
+         {
             strcpy(buf, "NOT-FOUND");
             send(newsockfd, buf, strlen(buf) + 1, 0);
             close(newsockfd);
             exit(0);
          }
-         
+
+         // Otherwise, send the prompt 'FOUND' to the client
          strcpy(buf, "FOUND");
          send(newsockfd, buf, strlen(buf) + 1, 0);
-         do{
-         recv_len = recv(newsockfd, buf, 50, 0);
-         struct string command=init_string();
-         while (buf[recv_len - 1])
-         {
-            concat_string(&command, buf, recv_len);
-            recv_len = recv(newsockfd, buf, 50, 0);
-         }
-         concat_string(&command, buf, recv_len);
 
-         printf("Command recieved : %s\n", command.str);
-         if(!strcmp(buf, "exit"))break;
-         char *head_cmd=strtok(command.str, " ");
-         if(!strcmp(head_cmd, "pwd")){
-            struct string cwd=init_string();
-            while(getcwd(cwd.str, cwd.capacity)!=cwd.str){
-               cwd.capacity*=2;
-               cwd.str=(char*)realloc(cwd.str, cwd.capacity);
+         // Looping construct to ask for users the shell commands until they exit
+         do
+         {
+            // Recieve the shell command from the client in chunks and keep on appending it to a string structure 'command'
+            recv_len = recv(newsockfd, buf, 50, 0);
+            struct string command = init_string();
+            while (buf[recv_len - 1])
+            {
+               concat_string(&command, buf, recv_len);
+               recv_len = recv(newsockfd, buf, 50, 0);
             }
-            int send_len=send(newsockfd, cwd.str, min(50, cwd.size+1), 0);
-            while(cwd.str[send_len-1]){
-               send_len+=send(newsockfd, cwd.str+send_len, min(50, strlen(cwd.str+send_len)+1), 0);
-            }
-            deinit_string(cwd);
-         }
-         else if(!strcmp(head_cmd, "dir")){
-            struct string wdir=init_string();
-            concat_string(&wdir, ".", 1);
-            char *change_dir=strtok(NULL, " ");
-            if(change_dir){
-               deinit_string(wdir);
-               wdir=init_string();
-               concat_string(&wdir, change_dir, strlen(change_dir));
-            }
-            DIR *dir;
-            struct dirent *entry;
-            struct string dir_list=init_string();
-            if (dir = opendir(wdir.str)) {
-               while (entry = readdir(dir)) {
-                  concat_string(&dir_list, entry->d_name, strlen(entry->d_name));
-                  concat_string(&dir_list, " " , 1);
+            concat_string(&command, buf, recv_len);
+
+            // If the client sends the exit command then break out of the loop to close the connection
+            if (!strcmp(buf, "exit"))
+               break;
+
+            // Extract the head of the command for e.g. 'pwd', 'cd', 'dir'
+            char *head_cmd = strtok(command.str, " ");
+
+            // Actions to be done if the command is of the form 'pwd'
+            if (!strcmp(head_cmd, "pwd"))
+            {
+               // Accquire the current working directory by getcwd() function
+               // Here we use the string structure for dynamically allocating the string for current working directory
+               struct string cwd = init_string();
+               while (getcwd(cwd.str, cwd.capacity) != cwd.str)
+               {
+                  cwd.capacity *= 2;
+                  cwd.str = (char *)realloc(cwd.str, cwd.capacity);
                }
-               closedir(dir);
+
+               // Send the current working directory to the client in packets of 50 or the size of the string + 1 (whichever is smaller)
+               int send_len = send(newsockfd, cwd.str, min(50, cwd.size + 1), 0);
+               while (cwd.str[send_len - 1])
+                  send_len += send(newsockfd, cwd.str + send_len, min(50, strlen(cwd.str + send_len) + 1), 0);
+
+               // De-initialize the string struct 'cwd'
+               deinit_string(cwd);
             }
-            else{
-               concat_string(&dir_list, "####", 4);
-            }
-            int send_len=send(newsockfd, dir_list.str, min(50, dir_list.size+1), 0);
-            while(dir_list.str[send_len-1]){
-               send_len+=send(newsockfd, dir_list.str+send_len, min(50, strlen(dir_list.str+send_len)+1), 0);
-            }
-            deinit_string(dir_list);
-            deinit_string(wdir);
-         }
-         else if(!strcmp(head_cmd, "cd")){
-            struct string wdir=init_string();
-            concat_string(&wdir, "/", 1);
-            char *change_dir=strtok(NULL, " ");
-            if(change_dir){
+            // Actions to be taken if the command is of the form 'dir'
+            else if (!strcmp(head_cmd, "dir"))
+            {
+               // The initial directory in which we are supposed to execute the dir command is the current diectory '.'
+               struct string wdir = init_string();
+               concat_string(&wdir, ".", 1);
+
+               // If an additional directory argument is given to the dir command then change the 'wdir' to that
+               char *change_dir = strtok(NULL, " ");
+               if (change_dir)
+               {
+                  deinit_string(wdir);
+                  wdir = init_string();
+                  concat_string(&wdir, change_dir, strlen(change_dir));
+               }
+
+               // Directory handling variables
+               DIR *dir;
+               struct dirent *entry;
+
+               // String structure for the list of files and directories to send to the client
+               struct string dir_list = init_string();
+
+               // Open the directory
+               if (dir = opendir(wdir.str))
+               {
+                  // Loop and concatanate the dir_list will all the files and directories inside the directory given as input
+                  while (entry = readdir(dir))
+                  {
+                     concat_string(&dir_list, entry->d_name, strlen(entry->d_name));
+                     concat_string(&dir_list, " ", 1);
+                  }
+
+                  // Close the directory
+                  closedir(dir);
+               }
+               else
+                  // Send '####' if an error occurs
+                  concat_string(&dir_list, "####", 4);
+
+               // Send the directory list to the client in packets of 50 or the size of the string + 1 (whichever is smaller)
+               int send_len = send(newsockfd, dir_list.str, min(50, dir_list.size + 1), 0);
+               while (dir_list.str[send_len - 1])
+                  send_len += send(newsockfd, dir_list.str + send_len, min(50, strlen(dir_list.str + send_len) + 1), 0);
+
+               // De-initialize the string structures used
+               deinit_string(dir_list);
                deinit_string(wdir);
-               wdir=init_string();
-               concat_string(&wdir, change_dir, strlen(change_dir));
             }
-            if(chdir(wdir.str)==0){
-               strcpy(buf, "");
-               send(newsockfd, buf, strlen(buf)+1, 0);
+            // Actions to be taken if the command is of the form 'cd'
+            else if (!strcmp(head_cmd, "cd"))
+            {
+               // If no argument is given to the cd command then it is supposed to navigate to the '/home' folder
+               struct string wdir = init_string();
+               concat_string(&wdir, "/home", 5);
+
+               // If an additional directory argument is given to the dir command then change the 'wdir' to that
+               char *change_dir = strtok(NULL, " ");
+               if (change_dir)
+               {
+                  deinit_string(wdir);
+                  wdir = init_string();
+                  concat_string(&wdir, change_dir, strlen(change_dir));
+               }
+
+               // Change the directory to the required argument given
+               if (chdir(wdir.str) == 0)
+               {
+                  // Send an empty string to the client for confirmation
+                  strcpy(buf, "");
+                  send(newsockfd, buf, strlen(buf) + 1, 0);
+               }
+               else
+               {
+                  // Send '####' if an error occurs
+                  strcpy(buf, "####");
+                  send(newsockfd, buf, strlen(buf) + 1, 0);
+               }
+
+               // De-initialize the string structure
+               deinit_string(wdir);
             }
-            else{
-               strcpy(buf, "####");
+            else
+            {
+               // Send '$$$$' in case of invalid command
+               strcpy(buf, "$$$$");
                send(newsockfd, buf, strlen(buf) + 1, 0);
             }
-            deinit_string(wdir);
-         }
-         else if(!strcmp(head_cmd, "exit")){
 
-         }
-         else{
-            strcpy(buf, "$$$$");
-            send(newsockfd, buf, strlen(buf) + 1, 0);
-         }
+            // De-initialize the 'command' string struct
+            deinit_string(command);
+         } while (strcmp(buf, "exit"));
 
-         deinit_string(command);
-         }while(strcmp(buf, "exit"));
-
+         // Close the new socket and exit from the child process
          close(newsockfd);
          exit(0);
       }
