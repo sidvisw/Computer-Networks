@@ -108,21 +108,27 @@ int main()
         // Looping construct to ask for users the shell commands until they exit
 		do
 		{
+			// Take the input for the command from the user
 			int i = 0;
 			char ch;
+			// Take character by character input from the user until a newline is encountered
 			while ((ch = getchar()) != '\n')
 			{
 				buf[i++] = ch;
 				i %= 50;
+				// Send the command in batches of 50 characters
 				if (i == 0)
 					send(sockfd, buf, 50, 0);
 			}
+			// Send the last batch of characters
 			buf[i] = '\0';
 			send(sockfd, buf, strlen(buf) + 1, 0);
+
+			// If the command is 'exit' break out of the loop and exit
 			if (!strcmp(buf, "exit"))
-			{
 				break;
-			}
+
+			// Recieve the output of the command from the shell server and keep on appending it to a string structure 'recv_string'
 			struct string recv_string = init_string();
 			recv_len = recv(sockfd, buf, 50, 0);
 			while (buf[recv_len - 1])
@@ -131,25 +137,34 @@ int main()
 				recv_len = recv(sockfd, buf, 50, 0);
 			}
 			concat_string(&recv_string, buf, recv_len);
+
+			// If the client responds with the string '$$$$' - It is an invalid command
 			if (!strcmp(recv_string.str, "$$$$"))
 			{
 				printf("Invalid command\n");
 			}
+			// If the client responds with the string '####' - There is an error in running the command
 			else if (!strcmp(recv_string.str, "####"))
 			{
-				printf("Error in runnig command\n");
+				printf("Error in running command\n");
 			}
+			// If the client responds with an empty string - A confirmation that it has executed the 'cd' command
 			else if (!strcmp(recv_string.str, ""))
 			{
+				/* Do nothing */
 			}
+			// In other cases output the string recieved from the server as an output to the shell command given to it
 			else
 			{
 				printf("%s\n", recv_string.str);
 			}
+
+			// De-initialize the recv_string string structure
 			deinit_string(recv_string);
 		} while (strcmp(buf, "exit"));
 	}
 
+	// Close the socket
 	close(sockfd);
 	return 0;
 }
