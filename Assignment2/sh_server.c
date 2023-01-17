@@ -222,7 +222,7 @@ int main()
                   while (entry = readdir(dir))
                   {
                      concat_string(&dir_list, entry->d_name, strlen(entry->d_name));
-                     concat_string(&dir_list, " ", 1);
+                     concat_string(&dir_list, "\t", 1);
                   }
 
                   // Close the directory
@@ -244,9 +244,9 @@ int main()
             // Actions to be taken if the command is of the form 'cd'
             else if (!strcmp(head_cmd, "cd"))
             {
-               // If no argument is given to the cd command then it is supposed to navigate to the '/home' folder
+               // If no argument is given to the cd command then it is supposed to navigate to the '/home/user/' folder
                struct string wdir = init_string();
-               concat_string(&wdir, "/home", 5);
+               concat_string(&wdir, getenv("HOME"), strlen(getenv("HOME")));
 
                // If an additional directory argument is given to the dir command then change the 'wdir' to that
                char *change_dir = strtok(NULL, " ");
