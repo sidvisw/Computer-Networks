@@ -47,6 +47,9 @@ int main(int argc, char *argv[])
 	// Specifies that up to 5 concurrent client requests will be queued up
 	listen(sockfd, 5);
 
+	// Seed the random number generator
+	srand(time(0));
+
 	/*
 		Looping construct for iterative server. After the
 		communication is over, the process comes back to wait again on
@@ -86,7 +89,6 @@ int main(int argc, char *argv[])
 		else if (!strcmp(buf, "Send Load"))
 		{
 			// Send a random number between 1 and 100
-			srand(time(0));
 			int load = rand() % 100 + 1;
 			sprintf(buf, "%d", load);
 
