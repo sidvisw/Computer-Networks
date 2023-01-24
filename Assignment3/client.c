@@ -9,8 +9,14 @@
 
 /* THE CLIENT PROCESS */
 
-int main()
+int main(int argc, char*argv[])
 {
+	if(argc != 2)
+	{
+		printf("Usage: ./client <load_balancer_port>\n");
+		exit(EXIT_FAILURE);
+	}
+
 	int sockfd; // Socket descriptor
 	struct sockaddr_in lb_addr;
 
@@ -26,7 +32,7 @@ int main()
 	// Specify the IP address of the load balancer. We assume that the server is running on the same machine as the client. 127.0.0.1 is a special address for "localhost" (this machine)
 	lb_addr.sin_family = AF_INET;
 	inet_aton("127.0.0.1", &lb_addr.sin_addr);
-	lb_addr.sin_port = htons(20000);
+	lb_addr.sin_port = htons(atoi(argv[1]));
 
 	// connect() system call establishes a connection with the load balancer process
 	if ((connect(sockfd, (struct sockaddr *)&lb_addr, sizeof(lb_addr))) < 0)
