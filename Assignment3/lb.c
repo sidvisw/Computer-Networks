@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    clock_t T;                             // Clock variable to keep trach of timeout of 5 sec
+    time_t T;                             // Clock variable to keep trach of timeout of 5 sec
     int timeout, load_tracker[2] = {0, 0}; // Timeout variable and load tracker array
     int sockfd, newsockfd;                 // Socket descriptors
     int clilen;
@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 
     // Initialize the timeout variable and the clock variable
     timeout = 5000;
-    T = clock();
+    T = time(0);
 
     // Looping structure for the concurrent TCP server used for load balancer
     // fork() function generates a new child process and the parent process comes back and waits at the accept call
@@ -141,8 +141,7 @@ int main(int argc, char *argv[])
             close(newsockfd);
 
             // Update the timeout and the clock variable
-            timeout = (5 - ((double)(clock() - T)) / CLOCKS_PER_SEC) * 1000;
-            T = clock();
+            timeout = (5 - (time(0)-T)) * 1000;
         }
         else
         {
@@ -185,7 +184,7 @@ int main(int argc, char *argv[])
 
             // Update the timeout and the clock variable
             timeout = 5000;
-            T = clock();
+            T = time(0);
         }
     }
     return 0;
