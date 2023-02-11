@@ -217,6 +217,7 @@ int main()
                 printf("Timeout 3 sec...\n");
                 deinit_string(path);
                 deinit_string(command);
+                close(sockfd);
                 continue;
             }
 
@@ -325,6 +326,7 @@ int main()
             if(error_in_response){
                 deinit_string(content_type);
                 deinit_string(remaining);
+                close(sockfd);
                 continue;
             }
 
@@ -488,6 +490,7 @@ int main()
                 printf("Timeout 3 sec...\n");
                 deinit_string(path);
                 deinit_string(command);
+                close(sockfd);
                 continue;
             }
 
@@ -557,6 +560,7 @@ int main()
             }
             if(error_in_response){
                 deinit_string(remaining);
+                close(sockfd);
                 continue;
             }
             deinit_string(remaining);
