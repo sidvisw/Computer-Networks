@@ -336,7 +336,7 @@ int main()
             {
                 if (!strcmp(content_type.str, "text/html"))
                 {
-                    execlp("chromium", "chromium", path.str + 1, NULL);
+                    execlp("firefox", "firefox", path.str + 1, NULL);
                 }
                 else if (!strcmp(content_type.str, "application/pdf"))
                 {
