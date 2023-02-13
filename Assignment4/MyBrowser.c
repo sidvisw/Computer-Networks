@@ -7,9 +7,14 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
+#define __USE_XOPEN
 #include <time.h>
+
+// #define _XOPEN_SOURCE
 
 /* A structure to hold a string */
 struct string
@@ -128,7 +133,7 @@ int main()
             
             struct string path = init_string();
             IP = strtok(IPandFile, "/");
-            for (char *dir; dir = strtok(NULL, "/");)
+            for (char *dir; (dir = strtok(NULL, "/"));)
             {
                 concat_string(&path, "/", 1);
                 concat_string(&path, dir, strlen(dir));
@@ -169,6 +174,8 @@ int main()
             concat_string(&request, "\r\n", 2);
 
             concat_string(&request, "Accept: ", 8);
+            struct string filename = init_string();
+            concat_string(&filename, path.str, path.size);
             strtok(path.str, ".");
             char *extension = strtok(NULL, ".");
             if (!strcmp(extension, "html"))
@@ -331,7 +338,7 @@ int main()
             }
 
             // Get the file
-            int fd = open(path.str, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+            int fd = open(filename.str+1, O_WRONLY | O_CREAT | O_TRUNC, 0666);
             if(fd < 0){
                 perror("Error in opening file\n");
                 exit(1);
@@ -346,16 +353,16 @@ int main()
 
             if(fork()==0){
                 if(!strcmp(content_type.str, "text/html")){
-                    execlp("firefox", "firefox", path.str, NULL);
+                    execlp("chromium", "chromium", filename.str+1, NULL);
                 }
                 else if(!strcmp(content_type.str, "application/pdf")){
-                    execlp("acroread", "acroread", path.str, NULL);
+                    execlp("acroread", "acroread", filename.str+1, NULL);
                 }
                 else if(!strcmp(content_type.str, "image/jpeg")){
-                    execlp("eog", "eog", path.str, NULL);
+                    execlp("eog", "eog", filename.str+1, NULL);
                 }
                 else if(!strcmp(content_type.str, "text/*")){
-                    execlp("gedit", "gedit", path.str, NULL);
+                    execlp("gedit", "gedit", filename.str+1, NULL);
                 }
                 else{
                     printf("Unable to open the file\n");
@@ -376,7 +383,7 @@ int main()
                 port = atoi(Port);
             struct string path = init_string();
             IP = strtok(IPandFile, "/");
-            for (char *dir; dir = strtok(NULL, "/");)
+            for (char *dir; (dir = strtok(NULL, "/"));)
             {
                 concat_string(&path, "/", 1);
                 concat_string(&path, dir, strlen(dir));
@@ -476,23 +483,23 @@ int main()
             close(fd);
 
             // Get the response and process it
-            struct pollfd pfd;
-            pfd.fd = sockfd;
-            pfd.events = POLLIN;
-            int ret = poll(&pfd, 1, 3000);
-            if (ret < 0)
-            {
-                perror("Error in poll\n");
-                exit(1);
-            }
-            if (ret == 0)
-            {
-                printf("Timeout 3 sec...\n");
-                deinit_string(path);
-                deinit_string(command);
-                close(sockfd);
-                continue;
-            }
+            // struct pollfd pfd;
+            // pfd.fd = sockfd;
+            // pfd.events = POLLIN;
+            // int ret = poll(&pfd, 1, 3000);
+            // if (ret < 0)
+            // {
+            //     perror("Error in poll\n");
+            //     exit(1);
+            // }
+            // if (ret == 0)
+            // {
+            //     printf("Timeout 3 sec...\n");
+            //     deinit_string(path);
+            //     deinit_string(command);
+            //     close(sockfd);
+            //     continue;
+            // }
 
             struct string remaining = init_string();
             int error_in_response = 0;
