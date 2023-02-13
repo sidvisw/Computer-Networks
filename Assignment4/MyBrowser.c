@@ -522,7 +522,7 @@ int main()
                     {
                         printf("File uploaded successfully\n");
                     }
-                    if (strstr(line.str, "400 Bad Request"))
+                    else if (strstr(line.str, "400 Bad Request"))
                     {
                         printf("400 Bad Request\n");
                         error_in_response = 1;
