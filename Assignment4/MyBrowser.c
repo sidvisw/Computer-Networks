@@ -316,11 +316,19 @@ int main()
 
             // Get the file
             struct string filename = init_string();
-            concat_string(&filename, path.str + 1, strlen(path.str+1));
+            concat_string(&filename, path.str, strlen(path.str));
             concat_string(&filename, ".", 1);
             concat_string(&filename, extension, strlen(extension));
             deinit_string(path);
-            int fd = open(filename.str, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+            int idx=0;
+            for(int i=0;i<filename.size;i++)
+            {
+                if(filename.str[i]=='/')
+                {
+                    idx=i;
+                }
+            }
+            int fd = open(filename.str+idx+1, O_WRONLY | O_CREAT | O_TRUNC, 0666);
             if (fd < 0)
             {
                 perror("Error in opening file\n");
@@ -339,19 +347,19 @@ int main()
             {
                 if (!strcmp(content_type.str, "text/html"))
                 {
-                    execlp("firefox", "firefox", filename.str, NULL);
+                    execlp("chromium", "chromium", filename.str+idx+1, NULL);
                 }
                 else if (!strcmp(content_type.str, "application/pdf"))
                 {
-                    execlp("acroread", "acroread", filename.str, NULL);
+                    execlp("evince", "evince", filename.str+idx+1, NULL);
                 }
                 else if (!strcmp(content_type.str, "image/jpeg"))
                 {
-                    execlp("eog", "eog", filename.str, NULL);
+                    execlp("eog", "eog", filename.str+idx+1, NULL);
                 }
                 else if (!strcmp(content_type.str, "text/*"))
                 {
-                    execlp("gedit", "gedit", filename.str, NULL);
+                    execlp("gedit", "gedit", filename.str+idx+1, NULL);
                 }
                 else
                 {
