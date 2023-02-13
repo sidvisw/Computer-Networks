@@ -213,6 +213,7 @@ int main()
             struct string remaining = init_string();
             struct string content_type = init_string();
             int content_len = 0, error_in_response = 0;
+            char errors[1024] = "";
             while (1)
             {
                 struct string line = init_string();
@@ -242,28 +243,29 @@ int main()
                 {
                     if (strstr(line.str, "200 OK"))
                     {
-                        printf("File found\n");
+                        strcat(errors, "File found\n");
                     }
                     else if (strstr(line.str, "400 Bad Request"))
                     {
-                        printf("400 Bad Request\n");
+                        strcat(errors, "400 Bad Request\n");
                         error_in_response = 1;
                     }
                     else if (strstr(line.str, "403 Forbidden"))
                     {
-                        printf("403 Forbidden\n");
+                        strcat(errors, "403 Forbidden\n");
                         error_in_response = 1;
                     }
                     else if (strstr(line.str, "404 Not Found"))
                     {
-                        printf("404 File not found\n");
+                        strcat(errors, "404 File Not Found\n");
                         error_in_response = 1;
                     }
                     else
                     {
                         strtok(line.str, " ");
                         char *status_code = strtok(NULL, " ");
-                        printf("%s Unknown error\n", status_code);
+                        strcat(errors, status_code);
+                        strcat(errors, "Unknown error\n");
                         error_in_response = 1;
                     }
                 }
@@ -275,7 +277,7 @@ int main()
                     time_t t = mktime(&TM);
                     if (t < time(NULL))
                     {
-                        printf("File expired\n");
+                        strcat(errors, "File expired\n");
                         error_in_response = 1;
                     }
                 }
@@ -298,12 +300,15 @@ int main()
                     time_t last_modified = mktime(&tm);
                     if (t < last_modified)
                     {
-                        printf("File has been modified much earlier\n");
+                        strcat(errors, "File has been modified much earlier\n");
                         error_in_response = 1;
                     }
                 }
                 deinit_string(line);
             }
+
+            printf("%s", errors);
+
             if (error_in_response)
             {
                 deinit_string(content_type);
@@ -320,15 +325,15 @@ int main()
             concat_string(&filename, ".", 1);
             concat_string(&filename, extension, strlen(extension));
             deinit_string(path);
-            int idx=0;
-            for(int i=0;i<filename.size;i++)
+            int idx = 0;
+            for (int i = 0; i < filename.size; i++)
             {
-                if(filename.str[i]=='/')
+                if (filename.str[i] == '/')
                 {
-                    idx=i;
+                    idx = i;
                 }
             }
-            int fd = open(filename.str+idx+1, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+            int fd = open(filename.str + idx + 1, O_WRONLY | O_CREAT | O_TRUNC, 0666);
             if (fd < 0)
             {
                 perror("Error in opening file\n");
@@ -347,19 +352,19 @@ int main()
             {
                 if (!strcmp(content_type.str, "text/html"))
                 {
-                    execlp("chromium", "chromium", filename.str+idx+1, NULL);
+                    execlp("chromium", "chromium", filename.str + idx + 1, NULL);
                 }
                 else if (!strcmp(content_type.str, "application/pdf"))
                 {
-                    execlp("evince", "evince", filename.str+idx+1, NULL);
+                    execlp("evince", "evince", filename.str + idx + 1, NULL);
                 }
                 else if (!strcmp(content_type.str, "image/jpeg"))
                 {
-                    execlp("eog", "eog", filename.str+idx+1, NULL);
+                    execlp("eog", "eog", filename.str + idx + 1, NULL);
                 }
                 else if (!strcmp(content_type.str, "text/*"))
                 {
-                    execlp("gedit", "gedit", filename.str+idx+1, NULL);
+                    execlp("gedit", "gedit", filename.str + idx + 1, NULL);
                 }
                 else
                 {
@@ -502,6 +507,7 @@ int main()
 
             struct string remaining = init_string();
             int error_in_response = 0;
+            char errors[1024] = "";
             while (1)
             {
                 struct string line = init_string();
@@ -531,33 +537,37 @@ int main()
                 {
                     if (strstr(line.str, "200 OK"))
                     {
-                        printf("File uploaded successfully\n");
+                        strcat(errors, "File uploaded successfully\n");
                     }
                     else if (strstr(line.str, "400 Bad Request"))
                     {
-                        printf("400 Bad Request\n");
+                        strcat(errors, "400 Bad Request\n");
                         error_in_response = 1;
                     }
                     else if (strstr(line.str, "403 Forbidden"))
                     {
-                        printf("403 Forbidden\n");
+                        strcat(errors, "403 Forbidden\n");
                         error_in_response = 1;
                     }
                     else if (strstr(line.str, "404 Not Found"))
                     {
-                        printf("404 File not found\n");
+                        strcat(errors, "404 File Not Found\n");
                         error_in_response = 1;
                     }
                     else
                     {
                         strtok(line.str, " ");
                         char *status_code = strtok(NULL, " ");
-                        printf("%s Unknown error\n", status_code);
+                        strcat(errors, status_code);
+                        strcat(errors, "Unknown error\n");
                         error_in_response = 1;
                     }
                 }
                 deinit_string(line);
             }
+
+            printf("%s", errors);
+
             if (error_in_response)
             {
                 deinit_string(remaining);
