@@ -1,3 +1,0 @@
-Date:14/02/2023, Time:03:03:42, IP:127.0.0.1, Port:52252, Request:GET, File:MyHTTP.c
-Date:14/02/2023, Time:03:04:37, IP:127.0.0.1, Port:44484, Request:GET, File:a1.pdf
-Date:14/02/2023, Time:03:07:12, IP:127.0.0.1, Port:35054, Request:GET, File:a1.pdf
