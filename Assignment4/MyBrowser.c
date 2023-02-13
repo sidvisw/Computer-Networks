@@ -74,23 +74,6 @@ void concat_string(struct string *s1, char *str, size_t len)
     s1->str[s1->size] = '\0';
 }
 
-struct string search_header_value(const char *response,const char *header)
-{
-    struct string value = init_string();
-    char *header_start = strstr(response, header);
-    if (header_start)
-    {
-        char *header_end = strstr(header_start, "\r\n");
-        if (header_end)
-        {
-            header_start += strlen(header);
-            while(header_start < header_end)
-                concat_string(&value, header_start++, 1);
-        }
-    }
-    return value;
-}
-
 /* THE CLIENT PROCESS */
 
 int main()
@@ -114,7 +97,8 @@ int main()
         input_string(&command);
 
         char *cmd = strtok(command.str, " ");
-        if(!cmd){
+        if (!cmd)
+        {
             deinit_string(command);
             continue;
         }
@@ -130,7 +114,7 @@ int main()
             char *Port = strtok(NULL, ":");
             if (Port)
                 port = atoi(Port);
-            
+
             struct string path = init_string();
             IP = strtok(IPandFile, "/");
             for (char *dir; (dir = strtok(NULL, "/"));)
@@ -208,23 +192,23 @@ int main()
             deinit_string(request);
 
             // Get the response and process it
-            // struct pollfd pfd;
-            // pfd.fd = sockfd;
-            // pfd.events = POLLIN;
-            // int ret = poll(&pfd, 1, 3000);
-            // if (ret < 0)
-            // {
-            //     perror("Error in poll\n");
-            //     exit(1);
-            // }
-            // if (ret == 0)
-            // {
-            //     printf("Timeout 3 sec...\n");
-            //     deinit_string(path);
-            //     deinit_string(command);
-            //     close(sockfd);
-            //     continue;
-            // }
+            struct pollfd pfd;
+            pfd.fd = sockfd;
+            pfd.events = POLLIN;
+            int ret = poll(&pfd, 1, 3000);
+            if (ret < 0)
+            {
+                perror("Error in poll\n");
+                exit(1);
+            }
+            if (ret == 0)
+            {
+                printf("Timeout 3 sec...\n");
+                deinit_string(path);
+                deinit_string(command);
+                close(sockfd);
+                continue;
+            }
 
             struct string remaining = init_string();
             struct string content_type = init_string();
@@ -233,14 +217,17 @@ int main()
             {
                 struct string line = init_string();
                 int flag = 0;
-                while(!flag){
+                while (!flag)
+                {
                     int recv_len = recv(sockfd, buf, 50, 0);
                     concat_string(&remaining, buf, recv_len);
-                    for(int i=0;i<remaining.size-1;i++){
-                        if(remaining.str[i] == '\r' && remaining.str[i+1] == '\n'){
+                    for (int i = 0; i < remaining.size - 1; i++)
+                    {
+                        if (remaining.str[i] == '\r' && remaining.str[i + 1] == '\n')
+                        {
                             concat_string(&line, remaining.str, i);
                             struct string temp_str = init_string();
-                            concat_string(&temp_str, remaining.str+i+2, remaining.size-i-2);
+                            concat_string(&temp_str, remaining.str + i + 2, remaining.size - i - 2);
                             deinit_string(remaining);
                             remaining = temp_str;
                             flag = 1;
@@ -249,66 +236,79 @@ int main()
                     }
                 }
                 printf("%s\r\n", line.str);
-                if(line.size==0)
+                if (line.size == 0)
                     break;
-                if(strstr(line.str, "HTTP/1.1")){
-                    if(strstr(line.str, "200 OK")){
+                if (strstr(line.str, "HTTP/1.1"))
+                {
+                    if (strstr(line.str, "200 OK"))
+                    {
                         printf("File found\n");
                     }
-                    else if (strstr(line.str, "400 Bad Request")){
+                    else if (strstr(line.str, "400 Bad Request"))
+                    {
                         printf("400 Bad Request\n");
                         error_in_response = 1;
                     }
-                    else if(strstr(line.str, "403 Forbidden")){
+                    else if (strstr(line.str, "403 Forbidden"))
+                    {
                         printf("403 Forbidden\n");
                         error_in_response = 1;
                     }
-                    else if (strstr(line.str, "404 Not Found")){
+                    else if (strstr(line.str, "404 Not Found"))
+                    {
                         printf("404 File not found\n");
                         error_in_response = 1;
                     }
-                    else{
+                    else
+                    {
                         strtok(line.str, " ");
                         char *status_code = strtok(NULL, " ");
                         printf("%s Unknown error\n", status_code);
                         error_in_response = 1;
                     }
                 }
-                else if(strstr(line.str, "Expires: ")){
+                else if (strstr(line.str, "Expires: "))
+                {
                     struct tm TM;
-                    char * date = line.str + strlen("Expires: ");
+                    char *date = line.str + strlen("Expires: ");
                     strptime(date, "%a, %d %b %Y %H:%M:%S %Z", &TM);
                     time_t t = mktime(&TM);
-                    if(t < time(NULL)){
+                    if (t < time(NULL))
+                    {
                         printf("File expired\n");
                         error_in_response = 1;
                     }
                 }
-                else if (strstr(line.str, "Content-Length: ")){
+                else if (strstr(line.str, "Content-Length: "))
+                {
                     char *len = line.str + strlen("Content-Length: ");
                     content_len = atoi(len);
                 }
-                else if (strstr(line.str, "Content-Type: ")){
+                else if (strstr(line.str, "Content-Type: "))
+                {
                     char *type = line.str + strlen("Content-Type: ");
                     concat_string(&content_type, type, strlen(type));
                 }
-                else if(strstr(line.str, "Last-Modified: ")){
+                else if (strstr(line.str, "Last-Modified: "))
+                {
                     struct tm TM;
-                    char * date = line.str + strlen("Last-Modified: ");
+                    char *date = line.str + strlen("Last-Modified: ");
                     strptime(date, "%a, %d %b %Y %H:%M:%S %Z", &TM);
                     time_t t = mktime(&TM);
                     time_t last_modified = mktime(&tm);
-                    if(t < last_modified){
+                    if (t < last_modified)
+                    {
                         printf("File has been modified much earlier\n");
                         error_in_response = 1;
                     }
                 }
                 deinit_string(line);
             }
-            if(error_in_response){
-                deinit_string(path);
+            if (error_in_response)
+            {
                 deinit_string(content_type);
                 deinit_string(remaining);
+                deinit_string(path);
                 deinit_string(command);
                 close(sockfd);
                 continue;
@@ -317,40 +317,50 @@ int main()
             // Get the file
             concat_string(&path, ".", 1);
             concat_string(&path, extension, strlen(extension));
-            int fd = open(path.str+1, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-            if(fd < 0){
+            int fd = open(path.str + 1, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+            if (fd < 0)
+            {
                 perror("Error in opening file\n");
                 exit(1);
             }
             int bytes_written = write(fd, remaining.str, remaining.size);
             deinit_string(remaining);
-            while(bytes_written < content_len){
+            while (bytes_written < content_len)
+            {
                 int recv_len = recv(sockfd, buf, 50, 0);
                 bytes_written += write(fd, buf, recv_len);
             }
             close(fd);
 
-            if(fork()==0){
-                if(!strcmp(content_type.str, "text/html")){
-                    execlp("chromium", "chromium", path.str+1, NULL);
+            if (fork() == 0)
+            {
+                if (!strcmp(content_type.str, "text/html"))
+                {
+                    execlp("chromium", "chromium", path.str + 1, NULL);
                 }
-                else if(!strcmp(content_type.str, "application/pdf")){
-                    execlp("acroread", "acroread", path.str+1, NULL);
+                else if (!strcmp(content_type.str, "application/pdf"))
+                {
+                    execlp("acroread", "acroread", path.str + 1, NULL);
                 }
-                else if(!strcmp(content_type.str, "image/jpeg")){
-                    execlp("eog", "eog", path.str+1, NULL);
+                else if (!strcmp(content_type.str, "image/jpeg"))
+                {
+                    execlp("eog", "eog", path.str + 1, NULL);
                 }
-                else if(!strcmp(content_type.str, "text/*")){
-                    execlp("gedit", "gedit", path.str+1, NULL);
+                else if (!strcmp(content_type.str, "text/*"))
+                {
+                    execlp("gedit", "gedit", path.str + 1, NULL);
                 }
-                else{
+                else
+                {
                     printf("Unable to open the file\n");
                 }
                 exit(0);
             }
-            else{
+            else
+            {
                 wait(NULL);
                 deinit_string(content_type);
+                deinit_string(path);
             }
         }
         else if (!strcmp(cmd, "PUT"))
@@ -462,23 +472,22 @@ int main()
             close(fd);
 
             // Get the response and process it
-            // struct pollfd pfd;
-            // pfd.fd = sockfd;
-            // pfd.events = POLLIN;
-            // int ret = poll(&pfd, 1, 3000);
-            // if (ret < 0)
-            // {
-            //     perror("Error in poll\n");
-            //     exit(1);
-            // }
-            // if (ret == 0)
-            // {
-            //     printf("Timeout 3 sec...\n");
-            //     deinit_string(path);
-            //     deinit_string(command);
-            //     close(sockfd);
-            //     continue;
-            // }
+            struct pollfd pfd;
+            pfd.fd = sockfd;
+            pfd.events = POLLIN;
+            int ret = poll(&pfd, 1, 3000);
+            if (ret < 0)
+            {
+                perror("Error in poll\n");
+                exit(1);
+            }
+            if (ret == 0)
+            {
+                printf("Timeout 3 sec...\n");
+                deinit_string(command);
+                close(sockfd);
+                continue;
+            }
 
             struct string remaining = init_string();
             int error_in_response = 0;
@@ -486,14 +495,17 @@ int main()
             {
                 struct string line = init_string();
                 int flag = 0;
-                while(!flag){
+                while (!flag)
+                {
                     int recv_len = recv(sockfd, buf, 50, 0);
                     concat_string(&remaining, buf, recv_len);
-                    for(int i=0;i<remaining.size-1;i++){
-                        if(remaining.str[i] == '\r' && remaining.str[i+1] == '\n'){
+                    for (int i = 0; i < remaining.size - 1; i++)
+                    {
+                        if (remaining.str[i] == '\r' && remaining.str[i + 1] == '\n')
+                        {
                             concat_string(&line, remaining.str, i);
                             struct string temp_str = init_string();
-                            concat_string(&temp_str, remaining.str+i+2, remaining.size-i-2);
+                            concat_string(&temp_str, remaining.str + i + 2, remaining.size - i - 2);
                             deinit_string(remaining);
                             remaining = temp_str;
                             flag = 1;
@@ -501,54 +513,48 @@ int main()
                         }
                     }
                 }
-                if(line.size==0)
+                printf("%s\r\n", line.str);
+                if (line.size == 0)
                     break;
-                if(strstr(line.str, "HTTP/1.1")){
-                    if(strstr(line.str, "200 OK")){
+                if (strstr(line.str, "HTTP/1.1"))
+                {
+                    if (strstr(line.str, "200 OK"))
+                    {
                         printf("File uploaded successfully\n");
                     }
-                    else if (strstr(line.str, "400 Bad Request")){
+                    if (strstr(line.str, "400 Bad Request"))
+                    {
                         printf("400 Bad Request\n");
-                        deinit_string(path);
-                        deinit_string(line);
-                        deinit_string(remaining);
-                        deinit_string(command);
                         error_in_response = 1;
                     }
-                    else if(strstr(line.str, "403 Forbidden")){
+                    else if (strstr(line.str, "403 Forbidden"))
+                    {
                         printf("403 Forbidden\n");
-                        deinit_string(path);
-                        deinit_string(line);
-                        deinit_string(remaining);
-                        deinit_string(command);
                         error_in_response = 1;
                     }
-                    else if (strstr(line.str, "404 Not Found")){
+                    else if (strstr(line.str, "404 Not Found"))
+                    {
                         printf("404 File not found\n");
-                        deinit_string(path);
-                        deinit_string(line);
-                        deinit_string(remaining);
-                        deinit_string(command);
                         error_in_response = 1;
                     }
-                    else{
+                    else
+                    {
                         strtok(line.str, " ");
                         char *status_code = strtok(NULL, " ");
                         printf("%s Unknown error\n", status_code);
-                        deinit_string(path);
-                        deinit_string(line);
-                        deinit_string(remaining);
-                        deinit_string(command);
                         error_in_response = 1;
                     }
                 }
                 deinit_string(line);
             }
-            if(error_in_response){
+            if (error_in_response)
+            {
                 deinit_string(remaining);
+                deinit_string(command);
                 close(sockfd);
                 continue;
             }
+            
             deinit_string(remaining);
         }
         else if (!strcmp(cmd, "QUIT"))
