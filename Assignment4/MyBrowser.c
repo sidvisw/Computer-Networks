@@ -265,7 +265,7 @@ int main()
                         strtok(line.str, " ");
                         char *status_code = strtok(NULL, " ");
                         strcat(errors, status_code);
-                        strcat(errors, "Unknown error\n");
+                        strcat(errors, " Unknown error\n");
                         error_in_response = 1;
                     }
                 }
@@ -559,7 +559,7 @@ int main()
                         strtok(line.str, " ");
                         char *status_code = strtok(NULL, " ");
                         strcat(errors, status_code);
-                        strcat(errors, "Unknown error\n");
+                        strcat(errors, " Unknown error\n");
                         error_in_response = 1;
                     }
                 }
