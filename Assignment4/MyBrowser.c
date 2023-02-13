@@ -174,8 +174,6 @@ int main()
             concat_string(&request, "\r\n", 2);
 
             concat_string(&request, "Accept: ", 8);
-            struct string filename = init_string();
-            concat_string(&filename, path.str, path.size);
             strtok(path.str, ".");
             char *extension = strtok(NULL, ".");
             if (!strcmp(extension, "html"))
@@ -210,23 +208,23 @@ int main()
             deinit_string(request);
 
             // Get the response and process it
-            struct pollfd pfd;
-            pfd.fd = sockfd;
-            pfd.events = POLLIN;
-            int ret = poll(&pfd, 1, 3000);
-            if (ret < 0)
-            {
-                perror("Error in poll\n");
-                exit(1);
-            }
-            if (ret == 0)
-            {
-                printf("Timeout 3 sec...\n");
-                deinit_string(path);
-                deinit_string(command);
-                close(sockfd);
-                continue;
-            }
+            // struct pollfd pfd;
+            // pfd.fd = sockfd;
+            // pfd.events = POLLIN;
+            // int ret = poll(&pfd, 1, 3000);
+            // if (ret < 0)
+            // {
+            //     perror("Error in poll\n");
+            //     exit(1);
+            // }
+            // if (ret == 0)
+            // {
+            //     printf("Timeout 3 sec...\n");
+            //     deinit_string(path);
+            //     deinit_string(command);
+            //     close(sockfd);
+            //     continue;
+            // }
 
             struct string remaining = init_string();
             struct string content_type = init_string();
@@ -250,6 +248,7 @@ int main()
                         }
                     }
                 }
+                printf("%s\r\n", line.str);
                 if(line.size==0)
                     break;
                 if(strstr(line.str, "HTTP/1.1")){
@@ -258,36 +257,20 @@ int main()
                     }
                     else if (strstr(line.str, "400 Bad Request")){
                         printf("400 Bad Request\n");
-                        deinit_string(path);
-                        deinit_string(line);
-                        deinit_string(remaining);
-                        deinit_string(command);
                         error_in_response = 1;
                     }
                     else if(strstr(line.str, "403 Forbidden")){
                         printf("403 Forbidden\n");
-                        deinit_string(path);
-                        deinit_string(line);
-                        deinit_string(remaining);
-                        deinit_string(command);
                         error_in_response = 1;
                     }
                     else if (strstr(line.str, "404 Not Found")){
                         printf("404 File not found\n");
-                        deinit_string(path);
-                        deinit_string(line);
-                        deinit_string(remaining);
-                        deinit_string(command);
                         error_in_response = 1;
                     }
                     else{
                         strtok(line.str, " ");
                         char *status_code = strtok(NULL, " ");
                         printf("%s Unknown error\n", status_code);
-                        deinit_string(path);
-                        deinit_string(line);
-                        deinit_string(remaining);
-                        deinit_string(command);
                         error_in_response = 1;
                     }
                 }
@@ -298,10 +281,6 @@ int main()
                     time_t t = mktime(&TM);
                     if(t < time(NULL)){
                         printf("File expired\n");
-                        deinit_string(path);
-                        deinit_string(line);
-                        deinit_string(remaining);
-                        deinit_string(command);
                         error_in_response = 1;
                     }
                 }
@@ -321,24 +300,24 @@ int main()
                     time_t last_modified = mktime(&tm);
                     if(t < last_modified){
                         printf("File has been modified much earlier\n");
-                        deinit_string(path);
-                        deinit_string(line);
-                        deinit_string(remaining);
-                        deinit_string(command);
                         error_in_response = 1;
                     }
                 }
                 deinit_string(line);
             }
             if(error_in_response){
+                deinit_string(path);
                 deinit_string(content_type);
                 deinit_string(remaining);
+                deinit_string(command);
                 close(sockfd);
                 continue;
             }
 
             // Get the file
-            int fd = open(filename.str+1, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+            concat_string(&path, ".", 1);
+            concat_string(&path, extension, strlen(extension));
+            int fd = open(path.str+1, O_WRONLY | O_CREAT | O_TRUNC, 0666);
             if(fd < 0){
                 perror("Error in opening file\n");
                 exit(1);
@@ -353,16 +332,16 @@ int main()
 
             if(fork()==0){
                 if(!strcmp(content_type.str, "text/html")){
-                    execlp("chromium", "chromium", filename.str+1, NULL);
+                    execlp("chromium", "chromium", path.str+1, NULL);
                 }
                 else if(!strcmp(content_type.str, "application/pdf")){
-                    execlp("acroread", "acroread", filename.str+1, NULL);
+                    execlp("acroread", "acroread", path.str+1, NULL);
                 }
                 else if(!strcmp(content_type.str, "image/jpeg")){
-                    execlp("eog", "eog", filename.str+1, NULL);
+                    execlp("eog", "eog", path.str+1, NULL);
                 }
                 else if(!strcmp(content_type.str, "text/*")){
-                    execlp("gedit", "gedit", filename.str+1, NULL);
+                    execlp("gedit", "gedit", path.str+1, NULL);
                 }
                 else{
                     printf("Unable to open the file\n");
