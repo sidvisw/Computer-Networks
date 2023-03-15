@@ -136,8 +136,8 @@ int my_close(int sockfd)
     if (sockfd != __oldsockfd)
         return close(sockfd);
 
-    pthread_kill(tid_s, SIGKILL);
-    pthread_kill(tid_r, SIGKILL);
+    pthread_cancel(tid_s);
+    pthread_cancel(tid_r);
 
     pthread_mutex_destroy(&mutex_s);
     pthread_mutex_destroy(&mutex_r);
