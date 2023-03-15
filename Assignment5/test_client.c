@@ -34,6 +34,7 @@ int main(int argc, char *argv[])
     {
         memset(buff, 0, BUFF_MAX);
         recv_len = my_recv(sockfd, buff, BUFF_MAX, 0);
+        printf("recv_len: %d\n", recv_len);
         printf("%d: ", 25 - count);
         for (int i = 0; i < recv_len; i++)
         {
