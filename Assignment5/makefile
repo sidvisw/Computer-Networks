@@ -9,8 +9,8 @@ tests: libmsocket.a test_server.c test_client.c
 	gcc -Wall test_client.c -L. -lmsocket -lpthread -o test_client
 
 clean:
-	rm mysocket.o
+	rm *.o test_server test_client
 
 distclean:
-	rm libmsocket.a mysocket.o test_server test_client client.log server.log
+	rm  *.o libmsocket.a test_server test_client
 

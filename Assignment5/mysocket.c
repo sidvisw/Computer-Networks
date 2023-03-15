@@ -42,6 +42,11 @@ int my_socket(int domain, int type, int protocol)
     Received_Message.connected = 0;
     Received_Message.closed = 0;
 
+    pthread_mutex_init(&mutex_s, NULL);
+    pthread_mutex_init(&mutex_r, NULL);
+    pthread_cond_init(&cond_s, NULL);
+    pthread_cond_init(&cond_r, NULL);
+
     pthread_create(&tid_s, NULL, S, NULL);
     pthread_create(&tid_r, NULL, R, NULL);
 
@@ -133,6 +138,12 @@ int my_close(int sockfd)
 
     pthread_kill(tid_s, SIGKILL);
     pthread_kill(tid_r, SIGKILL);
+
+    pthread_mutex_destroy(&mutex_s);
+    pthread_mutex_destroy(&mutex_r);
+    pthread_cond_destroy(&cond_s);
+    pthread_cond_destroy(&cond_r);
+
     for (int i = 0; i < TABLE_MAX; i++)
     {
         free(Send_Message.table[i]);
