@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define BUFF_MAX 500
+#define BUFF_MAX 5000
 
 int main(int argc, char *argv[])
 {
