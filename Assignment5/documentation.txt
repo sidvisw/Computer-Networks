@@ -1,0 +1,87 @@
+Computer Networks Laboratory (CS39006) -- Assignment 5
+MESSAGE ORIENTED TCP
+
+Siddharth Viswkarma - 20CS10082
+Pranav Kulkarni - 20CS30029
+
+Data Structures Used (in `mysocket.h`):
+    1. MyTable -
+        type - struct{
+            int *sizes; -- integer array to store the size of the strings stored in the table
+            char **table; -- array of strings to store messages to send (given  by  the  my_send  call)  and  messages  received  (to  be  read  by  the  my_recv call
+            int in; -- the pointer to the table for storing the entry point to the table
+            int out; -- the pointer to the table for removing the messages from the table
+            int connected; -- //Pranav
+            int closed; --  //Pranav
+        }
+    
+Function Declaration Used (in `mysocket.h`):
+    1. int my_socket(int, int, int);
+        @params - domain, type, protocol (for now only SOCK_MyTCP supported)
+        @returns - socket file descriptor for Message Oriented TCP
+        Description - This function is a wrapper around the standard TCP socket creation function. The function after creating the socket initializes the Send_Message and Received_Message tables along with the initialization of the mutexes and conditional variables to be used in the threads. Then after, it creates and starts the execution of the S and the R threads.
+
+    2. int my_bind(int, const struct sockaddr *, socklen_t);
+        @params - socket file descriptor, pointer to the sockaddr structure, size of the sockaddr structure
+        @returns - 0 on success, -1 on failure
+        Description - This function is a wrapper around the standard TCP bind function.
+
+    3. int my_listen(int, int);
+        @params - socket file descriptor, backlog
+        @returns - 0 on success, -1 on failure
+        Description - This function is a wrapper around the standard TCP listen function.
+    
+    4. int my_accept(int, struct sockaddr *, socklen_t *);
+        @params - socket file descriptor, pointer to the sockaddr structure, size of the sockaddr structure
+        @returns - socket file descriptor for the accepted connection
+        Description - This function is a wrapper around the standard TCP accept function. If the accept call is successful it assignes the boolean variable connected to 1 by locking the mutex_r.
+
+    5. int my_connect(int, const struct sockaddr *, socklen_t);
+        @params - socket file descriptor, pointer to the sockaddr structure, size of the sockaddr structure
+        @returns - 0 on success, -1 on failure
+        Description - This function is a wrapper around the standard TCP connect function. If the connect call is successful it assignes the boolean variable connected to 1 by locking the mutex_r.
+
+    6. int my_send(int, const void *, size_t, int);
+        @params - socket file descriptor, pointer to the data to be sent, size of the data to be sent, flags
+        @returns - number of bytes sent on success, -1 on failure
+        Description - The function begins it s execution by locking mutex_s then it blocks until the Send_Message table does not have a free entry. If a free entry is found in the Send_Message table it puts the data in the table and returns immediately.
+
+    7. int my_recv(int, void *, size_t, int);
+        @params - socket file descriptor, pointer to the data to be received, size of the data to be received, flags
+        @returns - number of bytes received on success, -1 on failure
+        Description - //Pranav
+
+    8. int my_close(int);
+        @params - socket file descriptor
+        @returns - 0 on success, -1 on failure
+        Description - This function is a wrapper around the standard TCP close function. It first starts it execution by sleep call for 5 secs to avoid race conditions. Then it sends the cancellation request to the S and R threads and then it closes the socket file descriptor. The function also frees the memory allocated to the Send_Message and Received_Message tables.
+
+Thread Declaration Used (in `mysocket.h`):
+    1. void *S(void *);
+        @params - an optional argument
+        @returns - a void pointer
+        Description - The thread S sleeps periodically for a time T and periodically checks if there is any message to be sent in the Send_Message table. If there is a message to be sent it takes out the message(s) from the table and sends it using the standard TCP send call.
+    
+    2. void *R(void *);
+        @params - an optional argument
+        @returns - a void pointer
+        Description - //Pranav
+
+Addional variables defined (in `mysocket.c`):
+    1. Mytable Send_Message, Received_Message;
+        Description - The struct variable to store the messages to be sent and the messages that are received.
+
+    2. pthread_t tid_s, tid_r;
+        Description - The variable to store the thread ids of the S and the R threads respectively.
+
+    3. int __sockfd;
+        Description - This variable is used to store the socket file descriptor returned by the socket call. This socket descriptor gets updated on the my_accept call to the new socket descriptor returned by the standard TCP accept call.
+
+    4. int __oldsockfd;
+        Description - This variable also stores the socket file descriptor returned by the socket call, but when my_accept is called it still remains equal to the previous socket descriptor file. This is for the proper functioning of the my_close call, so that on closing new socket the tables do not get deleted.
+
+    5. pthread_mutex_s, mutex_r;
+        Description - The mutex variables to gain the mutual exclusive access of the Send_Message and the Received_Message tables. The mutex_s is for the mutual exclusive access between the my_send function and S thread, whereas the mutex_r is for the mutual exclusive access between the my_recv function and R thread.
+
+    6. pthread_cond_t cond_s, cond_r;
+        Description - The conditional variables to block the S and R threads and the my_send and my_recv functions when the Send_Message and Received_Message tables are full or empty. The cond_s is for the conditional variable between the my_send function and S thread, whereas the cond_r is for the conditional variable between the my_recv function and R thread.
