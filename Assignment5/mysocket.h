@@ -42,7 +42,6 @@ typedef struct _MyTable
     int in, out;
     int count;
     int connected;
-    int closed;
 } MyTable;
 
 #endif

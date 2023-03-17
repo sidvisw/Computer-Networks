@@ -11,8 +11,7 @@ Data Structures Used (in `mysocket.h`):
             char **table; -- array of strings to store messages to send (given  by  the  my_send  call)  and  messages  received  (to  be  read  by  the  my_recv call
             int in; -- the pointer to the table for storing the entry point to the table
             int out; -- the pointer to the table for removing the messages from the table
-            int connected; -- //Pranav
-            int closed; --  //Pranav
+            int connected; -- boolean variable to check if the connection is established or not, used to avoid recv call before the connection is established        
         }
     
 Function Declaration Used (in `mysocket.h`):
@@ -49,7 +48,7 @@ Function Declaration Used (in `mysocket.h`):
     7. int my_recv(int, void *, size_t, int);
         @params - socket file descriptor, pointer to the data to be received, size of the data to be received, flags
         @returns - number of bytes received on success, -1 on failure
-        Description - //Pranav
+        Description - This function will read from the Received_Message table and return the data to the user. It will block untill the Received_Message table has some data to be read. If the Received_Message table has some data to be read it will read the data from the table and return immediately. In case of of connection close it will return -1.
 
     8. int my_close(int);
         @params - socket file descriptor
@@ -65,7 +64,7 @@ Thread Declaration Used (in `mysocket.h`):
     2. void *R(void *);
         @params - an optional argument
         @returns - a void pointer
-        Description - //Pranav
+        Description - This thread will continue try to receive the data from the socket using the standard TCP recv call. If the recv call is successful it will put the data in the Received_Message table. If the recv call returns 0 or -1 it will inform the my_recv function that the connection is closed by setting the boolean variable connected to 0 by locking the mutex_r.
 
 Addional variables defined (in `mysocket.c`):
     1. Mytable Send_Message, Received_Message;
