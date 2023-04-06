@@ -19,7 +19,15 @@ int main(int argc, char *argv[])
 
     struct in_addr dest_ip = *(struct in_addr *)host->h_addr_list[0];
 
-    
+    int sockfd;
+    if ((sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
+    {
+        printf("Unable to create socket.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    int one = 1;
+    setsockopt(sockfd, IPPROTO_IP, IP_HDRINCL, &one, sizeof(one));
 
     return 0;
 }
