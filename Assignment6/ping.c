@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #define MAX 1024
+#define TTL 61
 
 unsigned short in_cksum(unsigned short *addr, int len)
 {
@@ -52,12 +53,6 @@ unsigned short in_cksum(unsigned short *addr, int len)
 int main(int argc, char *argv[])
 {
     srand(time(NULL));
-
-    if (argc != 4)
-    {
-        printf("Usage: %s <IP Address / Site Address> <Number of probes> <Time difference between probes>\n", argv[0]);
-        exit(EXIT_FAILURE);
-    }
 
     struct hostent *host = gethostbyname(argv[1]);
     if (host == NULL)
@@ -92,17 +87,11 @@ int main(int argc, char *argv[])
 
     char buffer[MAX];
 
-    for (int ttl = 1; ttl < 17; ttl++)
+    while (1)
     {
+
         struct iphdr *ip = (struct iphdr *)buffer;
         struct icmphdr *icmp = (struct icmphdr *)(buffer + sizeof(struct iphdr));
-
-        char payload[64];
-        memset(payload, 0, 64);
-        for (int i = 0; i < 64; i++)
-        {
-            payload[i] = 'a' + (rand() % 26);
-        }
 
         memset(buffer, 0, MAX);
 
@@ -112,17 +101,16 @@ int main(int argc, char *argv[])
         ip->tot_len = sizeof(struct iphdr) + sizeof(struct icmphdr);
         ip->id = htons(rand() % 65535);
         ip->frag_off = 0;
-        ip->ttl = ttl;
+        ip->ttl = TTL;
         ip->protocol = IPPROTO_ICMP;
         ip->check = 0;
         ip->saddr = my_addr.sin_addr.s_addr;
         ip->daddr = dest_addr.sin_addr.s_addr;
-        memcpy(buffer + sizeof(struct iphdr) + sizeof(struct icmphdr), payload, 64);
 
         icmp->type = ICMP_ECHO;
         icmp->code = 0;
-        icmp->un.echo.id = htons(0);
-        icmp->un.echo.sequence = htons(0);
+        icmp->un.echo.id = htons(rand() % 65535);
+        icmp->un.echo.sequence = htons(rand() % 65535);
         icmp->checksum = in_cksum((unsigned short *)icmp, sizeof(struct icmphdr));
 
         if (sendto(sockfd, buffer, ip->tot_len, 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr)) < 0)
@@ -134,54 +122,30 @@ int main(int argc, char *argv[])
         struct sockaddr_in recv_addr;
         socklen_t recv_addr_len = sizeof(recv_addr);
 
-        int n = recvfrom(sockfd, buffer, MAX, 0, (struct sockaddr *)&recv_addr, &recv_addr_len);
-        if (n < 0)
+        while (1)
         {
-            printf("Unable to receive packet.\n");
-            exit(EXIT_FAILURE);
-        }
+            int n = recvfrom(sockfd, buffer, MAX, 0, (struct sockaddr *)&recv_addr, &recv_addr_len);
+            if (n < 0)
+            {
+                printf("Unable to receive packet.\n");
+                exit(EXIT_FAILURE);
+            }
 
-        printf("%d\n", n);
-        struct iphdr *recv_ip = (struct iphdr *)buffer;
-        struct icmphdr *recv_icmp = (struct icmphdr *)(buffer + sizeof(struct iphdr));
+            struct iphdr *recv_ip = (struct iphdr *)buffer;
+            struct icmphdr *recv_icmp = (struct icmphdr *)(buffer + sizeof(struct iphdr));
 
-        if (recv_icmp->type == ICMP_TIME_EXCEEDED)
-        {
-            struct iphdr *recv_ip = (struct iphdr *)(buffer + sizeof(struct iphdr) + sizeof(struct icmphdr));
-            struct icmphdr *recv_icmp = (struct icmphdr *)(buffer + sizeof(struct iphdr) + sizeof(struct icmphdr) + sizeof(struct iphdr));
+            if (recv_icmp->un.echo.id != icmp->un.echo.id && recv_icmp->un.echo.sequence != icmp->un.echo.sequence)
+            {
+                printf("Not this id\n");
+                continue;
+            }
 
             if (recv_icmp->type == ICMP_ECHOREPLY)
             {
-                printf("%d\t", ttl);
-                printf("%s (%s) ", inet_ntoa(*(struct in_addr *)&recv_ip->saddr), argv[1]);
-                printf("%d ms ", 0);
+                printf("%d bytes from %s: icmp_seq=%d ttl=%d\n", n, inet_ntoa(recv_addr.sin_addr), ntohs(recv_icmp->un.echo.sequence), recv_ip->ttl);
+                break;
             }
-
-            else
-            {
-                printf("%d\t", ttl);
-                printf("*\t");
-                printf("*\t");
-            }
-
-            printf("randi mehta\n");
-            printf("%s (%s) ", inet_ntoa(*(struct in_addr *)&recv_ip->saddr), argv[1]);
-        }
-
-        else if (recv_icmp->type == ICMP_ECHOREPLY)
-        {
-            printf("%d\t", ttl);
-            printf("%s (%s) ", inet_ntoa(*(struct in_addr *)&recv_ip->saddr), argv[1]);
-            printf("%d ms ", 0);
-        }
-
-        else
-        {
-            printf("%d\t", ttl);
-            printf("*\t");
-            printf("*\t");
         }
     }
-
     return 0;
 }
