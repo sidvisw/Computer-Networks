@@ -23,10 +23,22 @@
 #define DWORD 4
 #define IPv4 4
 #define PORT 20000
+
+#define BYTE_TO_BINARY_PATTERN " %c %c %c %c %c %c %c %c"
+#define BYTE_TO_BINARY(byte)  \
+  ((byte) & 0x80 ? '1' : '0'), \
+  ((byte) & 0x40 ? '1' : '0'), \
+  ((byte) & 0x20 ? '1' : '0'), \
+  ((byte) & 0x10 ? '1' : '0'), \
+  ((byte) & 0x08 ? '1' : '0'), \
+  ((byte) & 0x04 ? '1' : '0'), \
+  ((byte) & 0x02 ? '1' : '0'), \
+  ((byte) & 0x01 ? '1' : '0') 
+
 uint16_t checksum(const void *buff, size_t nbytes);
 char *dnsLookup(const char *h_name, struct sockaddr_in *addr);
 char *niLookup(int ni_family, struct sockaddr_in *addr);
-void printIP(struct iphdr *ip);
+void printIP(char *);
 void printICMP(struct icmphdr *icmp);
 
 int main(int argc, char *argv[])
@@ -103,8 +115,9 @@ int main(int argc, char *argv[])
 
     assert(checksum(ip, sizeof(struct iphdr)) == 0);
     assert(checksum(icmp, sizeof(struct icmphdr)) == 0);
-    printIP(ip);
-    printICMP(icmp);
+    printIP(buffer);
+    exit(0);
+    // printICMP(icmp);
 
     for (int i = 0; i < sizeof(msg); i++)
         data[i] = msg[i];
@@ -223,19 +236,46 @@ char *niLookup(int ni_family, struct sockaddr_in *addr)
     return strdup(inet_ntoa(((struct sockaddr_in *)it->ifa_addr)->sin_addr));
 }
 
-void printIP(struct iphdr *ip)
+void printIP(char *buff)
 {
-    printf("-----------------------------------------------------------------\n");
-    printf("|   version:%-2d  |   hlen:%-4d   |     tos:%-2d    |  totlen:%-4d  |\n", ip->version, ip->ihl, ip->tos, ip->tot_len);
-    printf("-----------------------------------------------------------------\n");
-    printf("|           id:%-6d           |%d|%d|%d|      frag_off:%-4d      |\n", ntohs(ip->id), ip->frag_off && (1 << 15), ip->frag_off && (1 << 14), ip->frag_off && (1 << 14), ip->frag_off);
-    printf("-----------------------------------------------------------------\n");
-    printf("|    ttl:%-4d   |  protocol:%-2d  |         checksum:%-6d       |\n", ip->ttl, ip->protocol, ip->check);
-    printf("-----------------------------------------------------------------\n");
-    printf("|                    source:%-16s                    |\n", inet_ntoa(*(struct in_addr *)&ip->saddr));
-    printf("-----------------------------------------------------------------\n");
-    printf("|                 destination:%-16s                  |\n", inet_ntoa(*(struct in_addr *)&ip->daddr));
-    printf("-----------------------------------------------------------------\n");
+    struct iphdr *ip = (struct iphdr *)buff;
+    struct icmphdr *icmp = (struct icmphdr *)(buff + sizeof(struct iphdr));
+
+    printf("+------------------------------------------------------------------------------+\n");
+    printf("|                                  IP Header                                   |\n");
+    printf("+------------------------------------------------------------------------------+\n");
+    printf("|  Version: %-2d |  IHL: %-2d |  TOS: %-2d |           Total Length: %-15d |\n", ip->version, ip->ihl, ip->tos, ntohs(ip->tot_len));
+    printf("+------------------------------------------------------------------------------+\n");
+    printf("|           Identification: %-8d | Flags: %-1d |      Fragment Offset: %-6d |\n", ntohs(ip->id), ip->frag_off >> 13, ip->frag_off & 0x1fff);
+    printf("+------------------------------------------------------------------------------+\n");
+    printf("|      TTL: %-5d |   Protocol: %-4d |          Header Checksum: %-13d |\n", ip->ttl, ip->protocol, ntohs(ip->check));
+    printf("+------------------------------------------------------------------------------+\n");
+    printf("|                          Source Address: %-35s |\n", inet_ntoa(*(struct in_addr *)&ip->saddr));
+    printf("+------------------------------------------------------------------------------+\n");
+    printf("|                       Destination Address: %-33s |\n", inet_ntoa(*(struct in_addr *)&ip->daddr));
+    printf("+------------------------------------------------------------------------------+\n");
+    if(ip->protocol == IPPROTO_ICMP){
+    printf("|                                  ICMP Header                                 |\n");
+    printf("+------------------------------------------------------------------------------+\n");
+    printf("|     Type: %-5d |      Code: %-5d |             Checksum: %-17d |\n", icmp->type, icmp->code, ntohs(icmp->checksum));
+    printf("+------------------------------------------------------------------------------+\n");
+    printf("|          Identifier: %-13d |           Sequence Number: %-12d |\n", ntohs(icmp->un.echo.id), ntohs(icmp->un.echo.sequence));
+    printf("+------------------------------------------------------------------------------+\n");
+    }
+    printf("|      ");
+    for (int i = 0; i < 4; i++)
+    {
+        printf(BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY((unsigned char)buff[i + sizeof(struct iphdr) + sizeof(struct icmphdr)]));
+    }
+    printf("        |\n");
+    printf("+------------------------------------------------------------------------------+\n");
+    printf("|      ");
+    for (int i = 4; i < 8; i++)
+    {
+        printf(BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY((unsigned char)buff[i + sizeof(struct iphdr) + sizeof(struct icmphdr)]));
+    }
+    printf("        |\n");
+    printf("+------------------------------------------------------------------------------+\n");
 }
 
 void printICMP(struct icmphdr *icmp)
