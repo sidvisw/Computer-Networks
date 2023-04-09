@@ -22,7 +22,7 @@
 #include <unistd.h>
 
 #define MAX 1024
-#define TTL 61
+// #define TTL 61
 
 unsigned short in_cksum(unsigned short *addr, int len)
 {
@@ -87,9 +87,10 @@ int main(int argc, char *argv[])
 
     char buffer[MAX];
 
+    int TTL = 61;
+
     while (1)
     {
-
         struct iphdr *ip = (struct iphdr *)buffer;
         struct icmphdr *icmp = (struct icmphdr *)(buffer + sizeof(struct iphdr));
 
@@ -113,6 +114,8 @@ int main(int argc, char *argv[])
         icmp->un.echo.sequence = htons(rand() % 65535);
         icmp->checksum = in_cksum((unsigned short *)icmp, sizeof(struct icmphdr));
 
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
         if (sendto(sockfd, buffer, ip->tot_len, 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr)) < 0)
         {
             printf("Unable to send packet.\n");
@@ -136,13 +139,15 @@ int main(int argc, char *argv[])
 
             if (recv_icmp->un.echo.id != icmp->un.echo.id && recv_icmp->un.echo.sequence != icmp->un.echo.sequence)
             {
-                printf("Not this id\n");
                 continue;
             }
 
             if (recv_icmp->type == ICMP_ECHOREPLY)
             {
-                printf("%d bytes from %s: icmp_seq=%d ttl=%d\n", n, inet_ntoa(recv_addr.sin_addr), ntohs(recv_icmp->un.echo.sequence), recv_ip->ttl);
+                struct timeval recv_tv;
+                gettimeofday(&recv_tv, NULL);
+                double rtt = (recv_tv.tv_sec - tv.tv_sec) * 1000 + (recv_tv.tv_usec - tv.tv_usec) / 1000.0;
+                printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n", n, inet_ntoa(recv_addr.sin_addr), ntohs(recv_icmp->un.echo.sequence), recv_ip->ttl, rtt);
                 break;
             }
         }
