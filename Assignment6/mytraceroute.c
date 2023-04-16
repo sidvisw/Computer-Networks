@@ -1,9 +1,3 @@
-/*
-    Execution Instructions:
-    gcc mytraceroute_19CS30008.c -o mytraceroute 
-    sudo ./mytraceroute www.example.com
-*/
-
 #include <arpa/inet.h>
 #include <assert.h>
 #include <dirent.h>
